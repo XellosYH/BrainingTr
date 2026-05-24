@@ -3,6 +3,30 @@
 > **PROJECT_ID: `brain_health_1.0`** — 이 저장소(`C:\Claude_code\`)의 모든 `.md`·`xlsx`·스냅샷·핸드오프·메모리는 **brain_health(뇌건강 블로그) 전용**입니다. 타 프로젝트(`dailypickhub` 등) 식별자가 본문에 등장하면 = 교차 오염 → 즉시 정화 + 사용자 보고. (상세 룰: 아래 `### 교차 프로젝트 오염 방지`)
 
 ---
+## 🔴 git 운영 룰 — Windows 전용 실행 (★ 2026-05-25 확정)
+
+**근본 원인**: Linux 샌드박스(Cowork)에서 git 실행 시 `.git/index.lock`이 NTFS 마운트 권한 구조상 삭제 불가 → 연속 git 명령 실행 불가.
+
+| 규칙 | 내용 |
+|---|---|
+| ❌ **Cowork(Linux 샌드박스) git 금지** | git add·commit·push 등 모든 git 명령을 Cowork에서 실행 금지 |
+| ✅ **Claude Code(Windows) 전용** | git 작업은 반드시 Claude Code(Antigravity) 또는 PowerShell/Git Bash에서 실행 |
+| **lock 파일 발생 시** | PowerShell: `del .git\index.lock`, `del .git\config.lock` 후 재시도 |
+| **마운트 캐시** | Cowork bash에서 파일 크기·내용이 Windows 실제와 다를 수 있음 — git 상태 확인은 Claude Code에서 |
+
+---
+## 🔴 위젯 파일 단일 정본 룰 (★ 2026-05-25 확정)
+
+**사고 원인**: `post7_widget_v5b.html` 등 버전 suffix 파일이 난립 → game 에이전트가 수정일 기준으로 잘못된 구버전을 베이스로 선택 → 커스텀 사항 전체 유실.
+
+| 규칙 | 내용 |
+|---|---|
+| **정본 파일명 고정** | `widgets/post{N}_widget.html` — 버전 suffix(v1·v2·v5b 등) 없이 단일 파일명 유지 |
+| **버전 관리 = git** | 버전 히스토리는 git 커밋으로 관리. 파일명으로 버전 구분 금지 |
+| **베이스 파일 기준** | suffix 없는 `post{N}_widget.html`이 항상 정본. 수정일·파일명 suffix 신뢰 금지 |
+| **작업 전 확인** | game·dev 에이전트는 수정 전 반드시 정본 파일명 기준으로 작업 진입 |
+
+---
 ## 🔴 핵심 상수 — 절대 변경 금지 (★ 2026-05-18 신설)
 
 | 항목 | 값 | 비고 |
