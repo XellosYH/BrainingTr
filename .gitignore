@@ -1,0 +1,35 @@
+# 청크/임시 파일
+widgets/*_chunk*.txt
+widgets/*_b64*.txt
+widgets/raw_*.txt
+widgets/inject_*.txt
+widgets/post7_sub*.txt
+widgets/*_b64_chunk_*.txt
+widgets/v*_b64_chunk_*.txt
+widgets/*_upload_script.js
+widgets/*_paste.txt
+widgets/*_minified.html
+widgets/*_ready.html
+widgets/*.bak
+widgets/*.bak2
+widgets/wp_patch_tool.html
+widgets/js_chunk_*.json
+widgets/wp_chunk_*.txt
+widgets/post7_wp_content*.txt
+widgets/post7_page303_paste.txt
+widgets/v3_b64_chunk_*.txt
+
+# 버전 suffix 파일 (post7_widget.html이 정본)
+widgets/post7_widget_v*.html
+widgets/post7_widget_img.html
+widgets/post7_widget_patched.html
+widgets/post7_widget_test.html
+widgets/post7_widget_hub.html
+widgets/test_hwatu.html
+
+# 세션 핸드오프 (버전관리 불필요)
+session_handoff_*.md
+
+# OS
+.DS_Store
+Thumbs.db
