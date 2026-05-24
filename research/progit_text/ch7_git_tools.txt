@@ -1,0 +1,3475 @@
+
+
+=== PDF Page 219 ===
+
+Git 도구
+지금까지 일상적으로 자주 사용하는 명령들과 몇 가지 워크플로를 배웠다. 파일을 추적하고 커밋하는 등의 기본적인
+명령뿐만 아니라 Staging Area가 왜 좋은지도 배웠고 가볍게 토픽 브랜치를 만들고 Merge 하는 방법도 다뤘다. 이제는
+Git 저장소로 충분히 소스코드를 관리할 수 있을 것이다.
+이 장에서는 일상적으로 사용하지는 않지만 위급한 상황에서 반드시 필요한 Git 도구를 살펴본다.
+리비전 조회하기
+Git은 커밋 하나를 가리키거나 범위를 사용하여 여러 커밋을 가리키는 다양한 방법을 갖고 있다. 그 많은 방법을 아는 것이
+필요하진 않지만 알아두면 좋다.
+리비전 하나 가리키기
+40글자나 되는 긴긴 SHA-1 해시 값으로도 커밋을 외울 수 있지만 사람이 사용하기 좋은 방법이 있다. 이 절에서는 커밋을
+가리키거나 표현하는 방법을 몇 가지 설명한다.
+SHA-1 줄여 쓰기
+Git은 해시 값의 앞 몇 글자만으로도 어떤 커밋인지 충분히 식별할 수 있다. 저장소 안에서 해시 값이 중복되지 않으면 해시
+값의 앞 4자만으로도 나타낼 수 있다. 즉 짧은 SHA-1 값이라고 해도 유일해야 한다.
+먼저 git log 명령으로 어떤 커밋이 있는지 조회하는 예제를 보자.
+$ git log
+commit 734713bc047d87bf7eac9674765ae793478c50d3
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Fri Jan 2 18:32:33 2009 -0800
+    fixed refs handling, added gc auto, updated tests
+commit d921970aadf03b3cf0e71becdaab3147ba71cdef
+Merge: 1c002dd... 35cfb2b...
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Thu Dec 11 15:08:43 2008 -0800
+    Merge commit 'phedders/rdocs'
+commit 1c002dd4b536e7479fe34593e72e6c6c1819e53b
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Thu Dec 11 14:58:32 2008 -
+    added some blame and merge stuff
+위의 내용은 1c002dd… 로 시작하는 커밋에 대해 로그를 살펴보겠다는 말이다. git show 명령을 사용하는 다음 결과는
+모두 같다(단 짧은 해시 값이 다른 커밋과 중복되지 않다고 가정).
+214
+
+=== PDF Page 220 ===
+
+$ git show 1c002dd4b536e7479fe34593e72e6c6c1819e53b
+$ git show 1c002dd4b536e7479f
+$ git show 1c002d
+git log 명령에 --abbrev-commit 이라는 옵션을 추가하면 짧고 중복되지 않는 해시 값을 보여준다. 기본으로
+7자를 보여주고 해시 값이 중복되는 경우 더 긴 해시 값을 보여준다.
+$ git log --abbrev-commit --pretty=oneline
+ca82a6d changed the version number
+085bb3b removed unnecessary test code
+a11bef0 first commit
+보통은 8자에서 10자 내외로도 충분히 유일하게 커밋을 나타낼 수 있다. 2018년 6월 현재 꽤 큰 프로젝트인 Linux 커널은
+79만 개 이상의 커밋, 650만 개 이상의 오브젝트가 있다. Linux 커널 프로젝트는 해시 값 11개만 사용해도 충돌이 없다.
+
+SHA-1 해시 값에 대한 단상
+Git을 쓰는 사람들은 가능성이 작긴 하지만 언젠가 SHA-1 값이 중복될까 봐 걱정한다. 정말 그렇게
+되면 어떤 일이 벌어질까?
+이미 있는 SHA-1 값이 Git 데이터베이스에 커밋되면 새로운 개체라고 해도 이미 커밋된 것으로
+생각하고 이전의 커밋을 재사용한다. 그래서 해당 SHA-1 값의 커밋을 Checkout 하면 항상 처음
+저장한 커밋만 Checkout 된다.
+그러나 해시 값이 중복되는 일은 일어나기 어렵다. SHA-1 값의 크기는 20 바이트(160비트)이다. 해시
+값이 중복될 확률이 50%가 되는 데 필요한 개체의 수는 280이다. 이 수는 1자 2,000해 ('자’는 '경’의
+'억’배 - 1024, 충돌 확률을 구하는 공식은 p = (n(n-1)/2) * (1/2^160) )이다. 즉, 지구에
+존재하는 모래알의 수에 1,200을 곱한 수와 맞먹는다.
+아직도 SHA-1 해시 값이 중복될까 봐 걱정하는 사람들을 위해 좀 더 덧붙이겠다. 지구에서 약 6억
+5천만 명의 인구가 개발하고 각자 매초 Linux 커널 히스토리 전체와(650만 개) 맞먹는 개체를 쏟아
+내고 바로 Push 한다고 가정하자. 이런 상황에서 해시 값의 충돌 날 확률이 50%가 되기까지는 약
+2년이 걸린다. 그냥 어느 날 동료가 한 순간에 모두 늑대에게 물려 죽을 확률이 훨씬 더 높다.
+브랜치로 가리키기
+커밋을 가리키는 방법 중에 가장 많이 사용하는 방법이 있다. 어떤 커밋이 브랜치의 가장 최신 커밋이라면 간단히 브랜치
+이름으로 커밋을 가리킬 수 있다. 브랜치 이름을 Git 명령에 전달하면 브랜치가 가리키는 커밋을 가리키게 된다. 만약
+topic1 브랜치의 최근 커밋을 보고 싶으면 아래와 같이 실행한다. topic1 브랜치가 ca82a6d… 를 가리키고 있기
+때문에 두 명령의 결과는 같다.
+$ git show ca82a6dff817ec66f44342007202690a93763949
+$ git show topic1
+브랜치가 가리키는 개체의 SHA-1 값에 대한 궁금증은 rev-parse 이라는 Plumbing 도구가 해결해 준다. Git의
+215
+
+=== PDF Page 221 ===
+
+내부에서 이 뚫어뻥에 대해 시원하게 설명한다. 기본적으로 rev-parse 은 저수준 명령이기 때문에 평소에는 전혀
+필요하지 않다. 그래도 한번 사용해보고 어떤 결과가 나오는지 알아 두자.
+$ git rev-parse topic1
+ca82a6dff817ec66f44342007202690a93763949
+RefLog로 가리키기
+Git은 자동으로 브랜치와 HEAD가 지난 몇 달 동안에 가리켰었던 커밋을 모두 기록하는데 이 로그를 “Reflog” 라고
+부른다.
+git reflog 를 실행하면 Reflog를 볼 수 있다.
+$ git reflog
+734713b HEAD@{0}: commit: fixed refs handling, added gc auto, updated
+d921970 HEAD@{1}: merge phedders/rdocs: Merge made by the 'recursive'
+strategy.
+1c002dd HEAD@{2}: commit: added some blame and merge stuff
+1c36188 HEAD@{3}: rebase -i (squash): updating HEAD
+95df984 HEAD@{4}: commit: # This is a combination of two commits.
+1c36188 HEAD@{5}: rebase -i (squash): updating HEAD
+7e05da5 HEAD@{6}: rebase -i (pick): updating HEAD
+Git은 브랜치가 가리키는 것이 달라질 때마다 그 정보를 임시 영역에 저장한다. 그래서 예전에 가리키던 것이 무엇인지
+확인해 볼 수 있다. @{n} 규칙을 사용하면 아래와 같이 HEAD가 5번 전에 가리켰던 것을 알 수 있다.
+$ git show HEAD@{5}
+순서뿐 아니라 시간도 사용할 수 있다. 어제 날짜의 master 브랜치를 보고 싶으면 아래와 같이 한다.
+$ git show master@{yesterday}
+이 명령은 어제 master 브랜치가 가리키고 있던 것이 무엇인지 보여준다. Reflog에 남아있을 때만 조회할 수 있기 때문에
+너무 오래된 커밋은 조회할 수 없다.
+git log -g 명령을 사용하면 git reflog 결과를 git log 명령과 같은 형태로 볼 수 있다.
+216
+
+=== PDF Page 222 ===
+
+$ git log -g master
+commit 734713bc047d87bf7eac9674765ae793478c50d3
+Reflog: master@{0} (Scott Chacon <schacon@gmail.com>)
+Reflog message: commit: fixed refs handling, added gc auto, updated
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Fri Jan 2 18:32:33 2009 -0800
+    fixed refs handling, added gc auto, updated tests
+commit d921970aadf03b3cf0e71becdaab3147ba71cdef
+Reflog: master@{1} (Scott Chacon <schacon@gmail.com>)
+Reflog message: merge phedders/rdocs: Merge made by recursive.
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Thu Dec 11 15:08:43 2008 -0800
+    Merge commit 'phedders/rdocs'
+Reflog의 일은 모두 로컬의 일이기 때문에 내 Reflog가 동료의 저장소에는 있을 수 없다. 이제 막 Clone 한 저장소는
+아무것도 한 것이 없어서 Reflog가 하나도 없다. git show HEAD@{2.months.ago} 같은 명령은 적어도 두 달 전에
+Clone 한 저장소에서나 사용할 수 있다. 그러니까 이 명령을 5분 전에 Clone 한 저장소에 사용하면 아무 결과도 나오지
+않는다.
+ Reflog를 Git의 Shell의 명령 히스토리 기능 버전으로 생각하기
+Unix나 Linux 사용 경험이 있는 경우 reflog를 Git의 Shell의 명령 히스토리 기능 버전으로 생각해볼 수 있다.
+여기서 중요한 점은 오직 나의 “세션” 에서만 확인할 수 있는 내용이라는 점으로 같은 시스템에 있더라도 다른이와
+공유되지 않는 정보라는 점이다.
+계통 관계로 가리키기
+계통 관계로도 커밋을 표현할 수 있다. 이름 끝에 ^ (캐럿) 기호를 붙이면 Git은 해당 커밋의 부모를 찾는다. 프로젝트
+히스토리가 아래와 같을 때는 아래처럼 한다.
+$ git log --pretty=format:'%h %s' --graph
+* 734713b fixed refs handling, added gc auto, updated tests
+*   d921970 Merge commit 'phedders/rdocs'
+|\
+| * 35cfb2b Some rdoc changes
+* | 1c002dd added some blame and merge stuff
+|/
+* 1c36188 ignore *.gem
+* 9b29157 add open3_detach to gemspec file list
+HEAD^ 는 바로 “HEAD의 부모” 를 의미하므로 바로 이전 커밋을 보여준다.
+217
+
+=== PDF Page 223 ===
+
+$ git show HEAD^
+commit d921970aadf03b3cf0e71becdaab3147ba71cdef
+Merge: 1c002dd... 35cfb2b...
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Thu Dec 11 15:08:43 2008 -0800
+    Merge commit 'phedders/rdocs'
+ Windows에서 캐럿 기호 사용하기
+Windows에서 실행한 cmd.exe 에서는 ^ 기호가 이미 다른 의미로 사용되고 있어서 Git 에서 사용하려면 좀 다른
+방식을 사용해야 한다. 기호 두 개를 연속으로 사용하거나 쌍따옴표 안에서 사용해야 한다.
+$ git show HEAD^     # will NOT work on Windows
+$ git show HEAD^^    # OK
+$ git show "HEAD^"   # OK
+^ 뒤에 숫자도 사용할 수 있다. 예를 들어 d921970^2 는 “d921970의 두 번째 부모” 를 의미한다. 그래서 두 번째 부모가
+있는 Merge 커밋에만 사용할 수 있다. 첫 번째 부모는 Merge 할 때 Checkout 했던 브랜치를 말하고 두 번째 부모는
+Merge 한 대상 브랜치를 의미한다.
+$ git show d921970^
+commit 1c002dd4b536e7479fe34593e72e6c6c1819e53b
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Thu Dec 11 14:58:32 2008 -0800
+    added some blame and merge stuff
+$ git show d921970^2
+commit 35cfb2b795a55793d7cc56a6cc2060b4bb732548
+Author: Paul Hedderly <paul+git@mjr.org>
+Date:   Wed Dec 10 22:22:03 2008 +0000
+    Some rdoc changes
+계통을 표현하는 방법으로 ~ 라는 것도 있다. HEAD~ 와 HEAD^ 는 똑같이 첫 번째 부모를 가리킨다. 하지만, 그 뒤에
+숫자를 사용하면 달라진다. HEAD~2 는 명령을 실행할 시점의 “첫 번째 부모의 첫 번째 부모” , 즉 “조부모” 를 가리킨다.
+위의 예제에서 HEAD~3 은 아래와 같다.
+218
+
+=== PDF Page 224 ===
+
+$ git show HEAD~3
+commit 1c3618887afb5fbcbea25b7c013f4e2114448b8d
+Author: Tom Preston-Werner <tom@mojombo.com>
+Date:   Fri Nov 7 13:47:59 2008 -0500
+    ignore *.gem
+이것은 HEAD^ 와 같은 표현이다. 부모의 부모의 부모 즉 증조 부모쯤 되겠다.
+$ git show HEAD^^^
+commit 1c3618887afb5fbcbea25b7c013f4e2114448b8d
+Author: Tom Preston-Werner <tom@mojombo.com>
+Date:   Fri Nov 7 13:47:59 2008 -0500
+    ignore *.gem
+이 두 표현을 같이 사용할 수도 있다. 위의 예제에서 HEAD~3^2 를 사용하면 증조부모의 Merge 커밋의 부모의 부모를
+조회한다.
+범위로 커밋 가리키기
+커밋을 하나씩 조회할 수도 있지만, 범위를 주고 여러 커밋을 한꺼번에 조회할 수도 있다. 범위를 사용하여 조회할 수
+있으면 브랜치를 관리할 때 유용하다. 상당히 많은 브랜치를 가지고 있고 “왜 이 브랜치들은 아직도 주 브랜치에 Merge도
+안 되고 뭐임?” 라는 의문이 들면 범위를 주고 어떤 브랜치인지 쉽게 찾을 수 있다.
+Double Dot
+범위를 표현하는 문법으로 Double Dot(..)을 많이 쓴다. Double Dot은 어떤 커밋들이 한쪽에는 관련됐고 다른 쪽에는
+관련되지 않았는지 Git에게 물어보는 것이다. 예들 들어 범위를 설명하는 데 사용할 예제과 같은 커밋 히스토리가 있다고
+가정하자.
+그림 137. 범위를 설명하는 데 사용할 예제
+experiment 브랜치의 커밋들 중에서 아직 master 브랜치에 Merge 하지 않은 것들만 보고 싶으면
+master..experiment 라고 사용한다. 이 표현은 “master에는 없지만, experiment에는 있는 커밋” 을 의미한다.
+여기에서는 설명을 쉽게 하려고 실제 조회 결과가 아니라 그림의 커밋을 의미하는 문자를 사용한다.
+219
+
+=== PDF Page 225 ===
+
+$ git log master..experiment
+D
+C
+반대로 experiment 에는 없고 master 에만 있는 커밋이 궁금하면 브랜치 순서를 거꾸로 사용한다.
+experiment..master 는 experiment 에는 없고 master 에만 있는 것을 알려준다.
+$ git log experiment..master
+F
+E
+experiment 브랜치를 Merge 할 때마다 Merge 하기 전에 무엇이 변경됐는지 확인해보고 싶을 것이다. 그리고 리모트
+저장소에 Push 할 때도 마찬가지로 차이점을 확인해보고 싶을 것이다. 이럴 때 굉장히 유용하다.
+$ git log origin/master..HEAD
+이 명령은 origin 저장소의 master 브랜치에는 없고 현재 Checkout 중인 브랜치에만 있는 커밋을 보여준다.
+Checkout 한 브랜치가 origin/master 라면 git log origin/master..HEAD 가 보여주는 커밋이 Push 하면
+서버에 전송될 커밋들이다. 그리고 한쪽의 Refs를 생략하면 Git은 HEAD`라고 가정하기 때문에 `git log
+origin/master.. 는 git log origin/master..HEAD 와 같다.
+세 개 이상의 Refs
+Double Dot은 간단하고 유용하지만 두 개 이상의 브랜치에는 사용할 수 없다. 그러니까 현재 작업 중인 브랜치에는
+있지만 다른 여러 브랜치에는 없는 커밋을 보고 싶으면 .. 으로는 확인할 수 없다. Git은 ^ 이나 --not 옵션 뒤에 브랜치
+이름을 넣으면 그 브랜치에 없는 커밋을 찾아준다. 아래의 명령 세 가지는 모두 같은 명령이다.
+$ git log refA..refB
+$ git log ^refA refB
+$ git log refB --not refA
+이 옵션들은 Double Dot으로는 할 수 없는, 세 개 이상의 Refs에 사용할 수 있는 장점이 있다. 예를 들어 refA 나 refB
+에는 있지만 refC 에는 없는 커밋을 보려면 아래 중 한 명령을 사용한다.
+$ git log refA refB ^refC
+$ git log refA refB --not refC
+이 조건을 잘 응용하면 작업 중인 브랜치와 다른 브랜치을 매우 상세하게 비교해볼 수 있다.
+220
+
+=== PDF Page 226 ===
+
+Triple Dot
+Triple Dot은 양쪽에 있는 두 Refs 사이에서 공통으로 가지는 것을 제외하고 서로 다른 커밋만 보여준다. 범위를 설명하는
+데 사용할 예제의 커밋 히스토리를 다시 보자. 만약 master 와 experiment 의 공통부분은 빼고 다른 커밋만 보고
+싶으면 아래와 같이 하면 된다.
+$ git log master...experiment
+F
+E
+D
+C
+우리가 아는 log 명령의 결과를 최근 날짜순으로 보여준다. 이 예제에서는 커밋을 네 개 보여준다.
+그리고 log 명령에 --left-right 옵션을 추가하면 각 커밋이 어느 브랜치에 속하는지도 보여주기 때문에 좀 더
+이해하기 쉽다.
+$ git log --left-right master...experiment
+< F
+< E
+> D
+> C
+위와 같은 명령을 사용하면 원하는 커밋을 좀 더 꼼꼼하게 살펴볼 수 있다.
+대화형 명령
+여기서 소개하는 몇 가지 대화형 명령을 이용하면 바로 전문가처럼 능숙하게 커밋할 수 있다. 스크립트를 통해 커밋할
+파일을 고르고 수정된 파일의 일부분만 커밋할 수도 있다. 스크립트는 수정하는 파일이 매우 많아서 통째로 커밋하기
+어려울 때 이슈별로 나눠서 커밋하기에 좋다. 이슈별로 나눠서 커밋하면 함께 일하는 동료가 검토하기 쉬워진다.
+git add 명령에 -i 나 --interactive 옵션을 주고 실행하면 Git은 아래와 같은 대화형 모드로 들어간다.
+$ git add -i
+           staged     unstaged path
+  1:    unchanged        +0/-1 TODO
+  2:    unchanged        +1/-1 index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+*** Commands ***
+  1: status     2: update      3: revert     4: add untracked
+  5: patch      6: diff        7: quit       8: help
+What now>
+이 명령은 Staging Area의 현재 상태가 어떻고 할 수 있는 일이 무엇인지 보여준다. 기본적으로 git status 명령이
+221
+
+=== PDF Page 227 ===
+
+보여주는 것과 같지만 좀 더 간결하고 정돈돼 있다. 왼쪽에는 Staged 상태인 파일들을 보여주고 오른쪽에는 Unstaged
+상태인 파일들을 보여준다.
+그리고 마지막 “Commands” 부분에서는 할 수 일이 무엇인지 보여준다. 파일들을 Stage하고 Unstage하는 것,
+Untracked 상태의 파일들을 추가하는 것, Stage한 파일을 Diff할 수 있다. 게다가 수정한 파일의 일부분만 Staging
+Area에 추가할 수도 있다.
+Staging Area에 파일 추가하고 추가 취소하기
+What now> 프롬프트에서 2 나 u 를(update) 입력하면 Staging Area에 추가할 수 있는 파일을 전부 보여준다.
+What now> 2
+           staged     unstaged path
+  1:    unchanged        +0/-1 TODO
+  2:    unchanged        +1/-1 index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+Update>>
+TODO`와 `index.html 파일을 Stage 하려면 아래와 같이 입력한다.
+Update>> 1,2
+           staged     unstaged path
+* 1:    unchanged        +0/-1 TODO
+* 2:    unchanged        +1/-1 index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+Update>>
+* 표시가 붙은 파일은 Stage 하도록 선택한 것이다. 선택하고 Update>> 프롬프트에 아무것도 입력하지 않고 엔터를
+치면 Git은 선택한 파일을 Staging Area로 추가한다.
+Update>>
+updated 2 paths
+*** Commands ***
+  1: status     2: update      3: revert     4: add untracked
+  5: patch      6: diff        7: quit       8: help
+What now> 1
+           staged     unstaged path
+  1:        +0/-1      nothing TODO
+  2:        +1/-1      nothing index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+이제 TODO`와 `index.html 파일은 Stage했고 simplegit.rb 파일만 아직 Unstaged 상태로 남아 있다. 이제
+TODO 파일을 다시 Unstage 하고 싶으면 3 이나 r 을(revert) 입력한다.
+222
+
+=== PDF Page 228 ===
+
+*** Commands ***
+  1: status     2: update      3: revert     4: add untracked
+  5: patch      6: diff        7: quit       8: help
+What now> 3
+           staged     unstaged path
+  1:        +0/-1      nothing TODO
+  2:        +1/-1      nothing index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+Revert>> 1
+           staged     unstaged path
+* 1:        +0/-1      nothing TODO
+  2:        +1/-1      nothing index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+Revert>> [enter]
+reverted one path
+다시 status를 선택하면 TODO 파일이 Unstaged 상태인 것을 알 수 있다.
+*** Commands ***
+  1: status     2: update      3: revert     4: add untracked
+  5: patch      6: diff        7: quit       8: help
+What now> 1
+           staged     unstaged path
+  1:    unchanged        +0/-1 TODO
+  2:        +1/-1      nothing index.html
+  3:    unchanged        +5/-1 lib/simplegit.rb
+Staged 파일들의 변경내용을 보려면 6 이나 d 를(diff) 입력한다. 그러면 먼저 Staged 상태인 파일들을 보여준다. 그리고
+그중에서 파일 하나를 선택한다. 그 결과는 커맨드라인에서 git diff --cached 라고 실행한 결과와 같다.
+223
+
+=== PDF Page 229 ===
+
+*** Commands ***
+  1: status     2: update      3: revert     4: add untracked
+  5: patch      6: diff        7: quit       8: help
+What now> 6
+           staged     unstaged path
+  1:        +1/-1      nothing index.html
+Review diff>> 1
+diff --git a/index.html b/index.html
+index 4d07108..4335f49 100644
+--- a/index.html
++++ b/index.html
+@@ -16,7 +16,7 @@ Date Finder
+ <p id="out">...</p>
+-<div id="footer">contact : support@github.com</div>
++<div id="footer">contact : email.support@github.com</div>
+ <script type="text/javascript">
+위와 같이 대화형 추가 모드를 사용하면 Staging Area에 파일들을 좀 더 쉽게 추가할 수 있다.
+파일의 일부분만 Staging Area에 추가하기
+파일의 일부분만 Staging Area에 추가하는 것도 가능하다. 예를 들어 simplegit.rb 파일은 고친 부분이 두 군데이다.
+그 중 하나를 추가하고 나머지는 그대로 두고 싶다. Git에서는 이런 작업도 매우 쉽게 할 수 있다. 대화형 프롬프트에서 5, p
+를(patch) 입력한다. 그러면 Git은 부분적으로 Staging Area에 추가할 파일이 있는지 묻는다. 파일을 선택하면 파일의
+특정 부분을 Staging Area에 추가할 것인지 부분별로 구분하여 묻는다.
+diff --git a/lib/simplegit.rb b/lib/simplegit.rb
+index dd5ecc4..57399e0 100644
+--- a/lib/simplegit.rb
++++ b/lib/simplegit.rb
+@@ -22,7 +22,7 @@ class SimpleGit
+   end
+   def log(treeish = 'master')
+-    command("git log -n 25 #{treeish}")
++    command("git log -n 30 #{treeish}")
+   end
+   def blame(path)
+Stage this hunk [y,n,a,d,/,j,J,g,e,?]?
+여기에서 ? 를 입력하면 선택할 수 있는 명령을 설명해준다.
+224
+
+=== PDF Page 230 ===
+
+Stage this hunk [y,n,a,d,/,j,J,g,e,?]? ?
+y - stage this hunk
+n - do not stage this hunk
+a - stage this and all the remaining hunks in the file
+d - do not stage this hunk nor any of the remaining hunks in the file
+g - select a hunk to go to
+/ - search for a hunk matching the given regex
+j - leave this hunk undecided, see next undecided hunk
+J - leave this hunk undecided, see next hunk
+k - leave this hunk undecided, see previous undecided hunk
+K - leave this hunk undecided, see previous hunk
+s - split the current hunk into smaller hunks
+e - manually edit the current hunk
+? - print help
+y 나 n 을 입력하면 각 부분을 Stage 할지 말지 결정할 수 있다. 하지만, 파일을 통째로 Stage 하거나 필요할 때까지 아예
+그대로 남겨 두는 것이 다음부터 더 유용할지도 모른다. 어쨌든 파일의 어떤 부분은 Stage 하고 다른 부분은 Unstaged
+상태로 남겨놓고 status 명령으로 확인해보면 결과는 아래와 같다.
+What now> 1
+           staged     unstaged path
+  1:    unchanged        +0/-1 TODO
+  2:        +1/-1      nothing index.html
+  3:        +1/-1        +4/-0 lib/simplegit.rb
+simplegit.rb 파일의 상태를 보자. 어떤 라인은 Staged 상태이고 어떤 라인은 Unstaged라고 알려줄 것이다. 이
+파일의 일부를 Stage 했다. 이제 대화형 모드를 종료하고 일부분만 Stage 한 파일을 커밋할 수 있다.
+대화형 스크립트로만 파일 일부분을 Stage 할 수 있는 것은 아니다. git add -p 나 git add --patch 로도 같은
+일을 할 수 있다.
+git reset --patch 명령을 사용해서 파일 일부만 Stage Area에서 내릴 수 있다. 또, git checkout --patch
+를 사용해서 파일 일부를 다시 Checkout 받을 수 있다. git stash save --patch 명령으로는 파일 일부만 Stash
+할 수 있다. 각 명령에 대해서 더 자세히 알아보자
+Stashing과 Cleaning
+당신이 어떤 프로젝트에서 한 부분을 담당하고 있다고 하자. 그리고 여기에서 뭔가 작업하던 일이 있고 다른 요청이
+들어와서 잠시 브랜치를 변경해야 할 일이 생겼다고 치자. 그런데 이런 상황에서 아직 완료하지 않은 일을 커밋하는 것이
+껄끄럽다는 것이 문제다. 커밋하지 않고 나중에 다시 돌아와서 작업을 다시 하고 싶을 것이다. 이 문제는 git stash
+라는 명령으로 해결할 수 있다.
+Stash 명령을 사용하면 워킹 디렉토리에서 수정한 파일들만 저장한다. Stash는 Modified이면서 Tracked 상태인 파일과
+Staging Area에 있는 파일들을 보관해두는 장소다. 아직 끝내지 않은 수정사항을 스택에 잠시 저장했다가 나중에 다시
+적용할 수 있다(브랜치가 달라져도 말이다).
+225
+
+=== PDF Page 231 ===
+
+
+git stash push 로의 이동
+2017년 10월 말 Git 메일링 리스트에는 엄청난 논의가 있었습니다. 논의는 git stash save
+명령을 은퇴시키고 git stash push`로 대체하는 내용에 대한 것이었습니다. `git
+stash push 명령의 경우 pathspec 으로 선택하여 Stash하는 옵션이 추가되었는데 git stash
+save 명령이 지원하지 못하는 것이었습니다.
+git stash save 명령이 곧바로 삭제되는 것은 아니기에 아직 이 명령을 쓰는 것에 대해 걱정할
+필요는 없지만 git stash push 명령으로 대체하는 것에 대해 생각해볼 필요가 있습니다.
+하던 일을 Stash 하기
+예제 프로젝트를 하나 살펴보자. 파일을 두 개 수정하고 그 중 하나는 Staging Area에 추가한다. 그리고 git status
+명령을 실행하면 아래와 같은 결과를 볼 수 있다.
+$ git status
+Changes to be committed:
+  (use "git reset HEAD <file>..." to unstage)
+  modified:   index.html
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working
+directory)
+  modified:   lib/simplegit.rb
+이제 브랜치를 변경해 보자. 아직 작업 중인 파일은 커밋할 게 아니라서 모두 Stash 한다. git stash 나 git stash
+save 를 실행하면 스택에 새로운 Stash가 만들어진다.
+$ git stash
+Saved working directory and index state \
+  "WIP on master: 049d078 added the index file"
+HEAD is now at 049d078 added the index file
+(To restore them type "git stash apply")
+대신 워킹 디렉토리는 깨끗해졌다.
+$ git status
+# On branch master
+nothing to commit, working directory clean
+이제 아무 브랜치나 골라서 쉽게 바꿀 수 있다. 수정하던 것을 스택에 저장했다. 아래와 같이 git stash list 를
+226
+
+=== PDF Page 232 ===
+
+사용하여 저장한 Stash를 확인한다.
+$ git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051 Revert "added file_size"
+stash@{2}: WIP on master: 21d80a5 added number to log
+Stash 두 개는 원래 있었다. 그래서 현재 총 세 개의 Stash를 사용할 수 있다. 이제 git stash apply 를 사용하여
+Stash를 다시 적용할 수 있다. git stash 명령을 실행하면 Stash를 다시 적용하는 방법도 알려줘서 편리하다. `git
+stash apply stash@{2}`처럼 Stash 이름을 입력하면 골라서 적용할 수 있다. 이름이 없으면 Git은 가장 최근의 Stash를
+적용한다.
+$ git stash apply
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working
+directory)
+  modified:   index.html
+  modified:   lib/simplegit.rb
+no changes added to commit (use "git add" and/or "git commit -a")
+Git은 Stash에 저장할 때 수정했던 파일들을 복원해준다. 복원할 때의 워킹 디렉토리는 Stash 할 때의 그 브랜치이고 워킹
+디렉토리도 깨끗한 상태였다. 하지만 꼭 깨끗한 워킹 디렉토리나 Stash 할 때와 같은 브랜치에 적용해야 하는 것은 아니다.
+어떤 브랜치에서 Stash 하고 다른 브랜치로 옮기고서 거기에 Stash를 복원할 수 있다. 그리고 꼭 워킹 디렉토리가 깨끗한
+상태일 필요도 없다. 워킹 디렉토리에 수정하고 커밋하지 않은 파일들이 있을 때도 Stash를 적용할 수 있다. 만약 충돌이
+있으면 알려준다.
+Git은 Stash를 적용할 때 Staged 상태였던 파일을 자동으로 다시 Staged 상태로 만들어 주지 않는다. 그래서 git
+stash apply 명령을 실행할 때 --index 옵션을 주어 Staged 상태까지 적용한다. 그래야 원래 작업하던 상태로
+돌아올 수 있다.
+227
+
+=== PDF Page 233 ===
+
+$ git stash apply --index
+On branch master
+Changes to be committed:
+  (use "git reset HEAD <file>..." to unstage)
+  modified:   index.html
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working
+directory)
+  modified:   lib/simplegit.rb
+apply 옵션은 단순히 Stash를 적용하는 것뿐이다. Stash는 여전히 스택에 남아 있다. git stash drop 명령을
+사용하여 해당 Stash를 제거한다.
+$ git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051 Revert "added file_size"
+stash@{2}: WIP on master: 21d80a5 added number to log
+$ git stash drop stash@{0}
+Dropped stash@{0} (364e91f3f268f0900bc3ee613f9f733e82aaed43)
+그리고 git stash pop 이라는 명령도 있는데 이 명령은 Stash를 적용하고 나서 바로 스택에서 제거해준다.
+Stash를 만드는 새로운 방법
+Stash를 만드는 방법은 여러 가지다. 주로 사용하는 옵션으로 stash save 명령과 같이 쓰는 --keep-index 이다. 이
+옵션을 이용하면 이미 Staging Area에 들어 있는 파일을 Stash 하지 않는다.
+$ git status -s
+M  index.html
+ M lib/simplegit.rb
+$ git stash --keep-index
+Saved working directory and index state WIP on master: 1b65b17 added the
+index file
+HEAD is now at 1b65b17 added the index file
+$ git status -s
+M  index.html
+추적하지 않는 파일과 추적 중인 파일을 같이 Stash 하는 일도 꽤 빈번하다. 기본적으로 git stash 는 추적 중인 파일만
+저장한다. 추적 중이지 않은 파일을 같이 저장하려면 Stash 명령을 사용할 때 --include-untracked 나 -u 옵션을
+228
+
+=== PDF Page 234 ===
+
+붙여준다.
+$ git status -s
+M  index.html
+ M lib/simplegit.rb
+?? new-file.txt
+$ git stash -u
+Saved working directory and index state WIP on master: 1b65b17 added the
+index file
+HEAD is now at 1b65b17 added the index file
+$ git status -s
+$
+끝으로 --patch 옵션을 붙이면 Git은 수정된 모든 사항을 저장하지 않는다. 대신 대화형 프롬프트가 뜨며 변경된 데이터
+중 저장할 것과 저장하지 않을 것을 지정할 수 있다.
+$ git stash --patch
+diff --git a/lib/simplegit.rb b/lib/simplegit.rb
+index 66d332e..8bb5674 100644
+--- a/lib/simplegit.rb
++++ b/lib/simplegit.rb
+@@ -16,6 +16,10 @@ class SimpleGit
+         return `#{git_cmd} 2>&1`.chomp
+       end
+     end
++
++    def show(treeish = 'master')
++      command("git show #{treeish}")
++    end
+ end
+ test
+Stash this hunk [y,n,q,a,d,/,e,?]? y
+Saved working directory and index state WIP on master: 1b65b17 added the
+index file
+Stash를 적용한 브랜치 만들기
+보통 Stash에 저장하면 한동안 그대로 유지한 채로 그 브랜치에서 계속 새로운 일을 한다. 그러면 이제 저장한 Stash를
+적용하는 것이 문제가 된다. 수정한 파일에 Stash를 적용하면 충돌이 일어날 수도 있고 그러면 또 충돌을 해결해야 한다.
+필요한 것은 Stash 한 것을 쉽게 다시 테스트하는 것이다. git stash branch <브랜치> 명령을 실행하면 Stash 할
+당시의 커밋을 Checkout 한 후 새로운 브랜치를 만들고 여기에 적용한다. 이 모든 것이 성공하면 Stash를 삭제한다.
+229
+
+=== PDF Page 235 ===
+
+$ git stash branch testchanges
+M index.html
+M lib/simplegit.rb
+Switched to a new branch 'testchanges'
+On branch testchanges
+Changes to be committed:
+  (use "git reset HEAD <file>..." to unstage)
+  modified:   index.html
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working
+directory)
+  modified:   lib/simplegit.rb
+Dropped refs/stash@{0} (29d385a81d163dfd45a452a2ce816487a6b8b014)
+이 명령은 브랜치를 새로 만들고 Stash를 복원해주는 매우 편리한 도구다.
+워킹 디렉토리 청소하기
+작업하고 있던 파일을 Stash 하지 않고 단순히 그 파일들을 치워버리고 싶을 때가 있다. git clean 명령이 그 일을
+한다.
+보통은 Merge나 외부 도구가 만들어낸 파일을 지우거나 이전 빌드 작업으로 생성된 각종 파일을 지우는 데 필요하다.
+이 명령을 사용할 때는 신중해야 한다. 이 명령을 사용하면 워킹 디렉토리 안의 추적하고 있지 않은 모든 파일이 지워지기
+때문이다. 명령을 실행하고 나서 후회해도 소용없다. 지워진 파일은 돌아오지 않는다. git stash –all 명령을
+이용하면 지우는 건 똑같지만, 먼저 모든 파일을 Stash 하므로 좀 더 안전하다.
+워킹 디렉토리의 불필요한 파일들을 전부 지우려면 git clean 을 사용한다. 추적 중이지 않은 모든 정보를 워킹
+디렉토리에서 지우고 싶다면 git clean -f -d 명령을 사용하자. 이 명령은 하위 디렉토리까지 모두 지워버린다. -f
+옵션은 강제(force)의 의미이며 "진짜로 그냥 해라"라는 뜻이다.
+이 명령을 실행했을 때 어떤 일이 일어날지 미리 보고 싶다면 -n 옵션을 사용한다. -n 옵션은 “가상으로 실행해보고 어떤
+파일들이 지워질지 알려달라” 라는 뜻이다.
+$ git clean -d -n
+Would remove test.o
+Would remove tmp/
+git clean 명령은 추적 중이지 않은 파일만 지우는 게 기본 동작이다. .gitignore 에 명시했거나 해서 무시되는
+파일은 지우지 않는다. 무시된 파일까지 함께 지우려면 -x 옵션이 필요하다. 그래서 .o 파일 같은 빌드 파일까지도 지울 수
+있다.
+230
+
+=== PDF Page 236 ===
+
+$ git status -s
+ M lib/simplegit.rb
+?? build.TMP
+?? tmp/
+$ git clean -n -d
+Would remove build.TMP
+Would remove tmp/
+$ git clean -n -d -x
+Would remove build.TMP
+Would remove test.o
+Would remove tmp/
+git clean 이 무슨 짓을 할지 확신이 안들 때는 항상 -n 옵션을 붙여서 먼저 실행해보자. clean 명령을 대화형으로
+실행하려면 -i 옵션을 붙이면 된다.
+대화형으로 실행한 clean 명령의 모습은 아래와 같다.
+$ git clean -x -i
+Would remove the following items:
+  build.TMP  test.o
+*** Commands ***
+    1: clean                2: filter by pattern    3: select by numbers
+4: ask each             5: quit
+    6: help
+What now>
+대화형으로 실행하면 파일마다 지우지 말지 결정하거나 특정 패턴으로 걸러서 지울 수도 있다.
+
+작업하던 저장소가 완전 지저분해져서 Git에게 진짜로 강제로 정리하도록 해야 하는 경우가 생길 수
+있다. 예를 들어 Git 버전관리 데이터가 포함된 디렉토리를 복사해왔거나 서브모듈 디렉토리에 문제가
+생겼거나 하는 경우 git clean -fd 옵션으로 실행한 명령이라도 디렉토리 삭제가 되지 않는
+경우가 있다. 이런 경우에는 -f 옵션을 한번 더 사용하여 강제성을 추가로 주어야 한다.
+내 작업에 서명하기
+Git은 암호학적으로 안전하다. 하지만, 그냥 되는 건 아니다. 저장소에 아무나 접근하지 못하게 하고 진짜로 확인된
+사람에게서만 커밋을 받으려면 GPG를 이용한다.
+GPG 소개
+우선 뭔가를 서명 하려면, GPG 설정도 하고 개인키도 설치해야 한다.
+231
+
+=== PDF Page 237 ===
+
+$ gpg --list-keys
+/Users/schacon/.gnupg/pubring.gpg
+---------------------------------
+pub   2048R/0A46826A 2014-06-04
+uid                  Scott Chacon (Git signing key) <schacon@gmail.com>
+sub   2048R/874529A9 2014-06-04
+가진 키가 없으면 키를 새로 만들어야 한다. 키를 만들려면 gpg --genkey 명령을 실행한다.
+$ gpg --gen-key
+서명에 사용할 수 있는 개인키가 이미 있다면 Git 설정 중에 user.signingkey 로 설정해서 사용할 수 있다.
+$ git config --global user.signingkey 0A46826A
+설정하고 나면 이제 Git은 태그와 커밋에 서명할 때 등록한 키를 사용한다.
+태그 서명하기
+GPG 개인키 설정을 마쳤으면 새로 만드는 태그들에 서명할 수 있다. 서명하려면 -a 대신 -s 만 쓰면 된다.
+$ git tag -s v1.5 -m 'my signed 1.5 tag'
+You need a passphrase to unlock the secret key for
+user: "Ben Straub <ben@straub.cc>"
+2048-bit RSA key, ID 800430EB, created 2014-05-04
+태그를 git show 명령으로 보면, GPG 서명이 붙어 있는 걸 볼 수 있다.
+232
+
+=== PDF Page 238 ===
+
+$ git show v1.5
+tag v1.5
+Tagger: Ben Straub <ben@straub.cc>
+Date:   Sat May 3 20:29:41 2014 -0700
+my signed 1.5 tag
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+iQEcBAABAgAGBQJTZbQlAAoJEF0+sviABDDrZbQH/09PfE51KPVPlanr6q1v4/Ut
+LQxfojUWiLQdg2ESJItkcuweYg+kc3HCyFejeDIBw9dpXt00rY26p05qrpnG+85b
+hM1/PswpPLuBSr+oCIDj5GMC2r2iEKsfv2fJbNW8iWAXVLoWZRF8B0MfqX/YTMbm
+ecorc4iXzQu7tupRihslbNkfvfciMnSDeSvzCpWAHl7h8Wj6hhqePmLm9lAYqnKp
+8S5B/1SSQuEAjRZgI4IexpZoeKGVDptPHxLLS38fozsyi0QyDyzEgJxcJQVMXxVi
+RUysgqjcpT8+iQM1PblGfHR4XAhuOqN5Fx06PSaFZhqvWFezJ28/CLyX5q+oIVk=
+=EFTF
+-----END PGP SIGNATURE-----
+commit ca82a6dff817ec66f44342007202690a93763949
+Author: Scott Chacon <schacon@gee-mail.com>
+Date:   Mon Mar 17 21:52:11 2008 -0700
+    changed the version number
+태그 확인하기
+git tag -v <tag-name> 명령을 이용해 태그에 서명한 사람이 정말 그 사람이 맞는지 확인한다. 이 명령은 서명을
+확인하기 위해 GPG를 사용한다. 확인 작업을 하려면 서명한 사람의 GPG 공개키를 키 관리 시스템에 등록해두어야 한다.
+$ git tag -v v1.4.2.1
+object 883653babd8ee7ea23e6a5c392bb739348b1eb61
+type commit
+tag v1.4.2.1
+tagger Junio C Hamano <junkio@cox.net> 1158138501 -0700
+GIT 1.4.2.1
+Minor fixes since 1.4.2, including git-mv and git-http with alternates.
+gpg: Signature made Wed Sep 13 02:08:25 2006 PDT using DSA key ID F3119B9A
+gpg: Good signature from "Junio C Hamano <junkio@cox.net>"
+gpg:                 aka "[jpeg image of size 1513]"
+Primary key fingerprint: 3565 2A26 2040 E066 C9A7  4A7D C0C6 D9A4 F311
+9B9A
+서명한 사람의 공개키가 없으면 아래와 같은 메시지가 나타난다.
+233
+
+=== PDF Page 239 ===
+
+gpg: Signature made Wed Sep 13 02:08:25 2006 PDT using DSA key ID F3119B9A
+gpg: Can't check signature: public key not found
+error: could not verify the tag 'v1.4.2.1'
+커밋에 서명하기
+최신 버전(v1.7.9 이상)의 Git은 커밋에도 서명할 수 있다. 커밋에 서명하고 싶으면 git commit 명령에 -S 옵션만
+붙여주면 된다.
+$ git commit -a -S -m 'signed commit'
+You need a passphrase to unlock the secret key for
+user: "Scott Chacon (Git signing key) <schacon@gmail.com>"
+2048-bit RSA key, ID 0A46826A, created 2014-06-04
+[master 5c3386c] signed commit
+ 4 files changed, 4 insertions(+), 24 deletions(-)
+ rewrite Rakefile (100%)
+ create mode 100644 lib/git.rb
+서명을 확인하려면 git log 명령에 --show-signature 옵션을 붙여주자.
+$ git log --show-signature -1
+commit 5c3386cf54bba0a33a32da706aa52bc0155503c2
+gpg: Signature made Wed Jun  4 19:49:17 2014 PDT using RSA key ID 0A46826A
+gpg: Good signature from "Scott Chacon (Git signing key)
+<schacon@gmail.com>"
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Wed Jun 4 19:49:17 2014 -0700
+    signed commit
+git log 로 출력한 로그에서 커밋에 대한 서명 정보를 알려면 %G? 포맷을 이용한다.
+$ git log --pretty="format:%h %G? %aN  %s"
+5c3386c G Scott Chacon  signed commit
+ca82a6d N Scott Chacon  changed the version number
+085bb3b N Scott Chacon  removed unnecessary test code
+a11bef0 N Scott Chacon  first commit
+위 로그에서 제일 최근 커밋만 올바르게 서명한 커밋이라는 것을 확인할 수 있다. 다른 커밋들은 서명하지 않았다.
+234
+
+=== PDF Page 240 ===
+
+1.8.3 버전 이후의 Git에서는 git merge`와 `git pull`에서 GPG 서명 정보를 이용해 Merge를 허용하지
+않을 수 있다. `--verify-signatures 옵션으로 이 기능을 사용할 수 있다.
+Merge 할 때 --verify-signatures 옵션을 붙이면 Merge 할 커밋 중 서명하지 않았거나 신뢰할 수 없는 사람이
+서명한 커밋이 있으면 Merge 되지 않는다.
+$ git merge --verify-signatures non-verify
+fatal: Commit ab06180 does not have a GPG signature.
+Merge 할 커밋 전부가 신뢰할 수 있는 사람에 의해 서명된 커밋이면 모든 서명을 출력하고 Merge를 수행한다.
+$ git merge --verify-signatures signed-branch
+Commit 13ad65e has a good GPG signature by Scott Chacon (Git signing key)
+<schacon@gmail.com>
+Updating 5c3386c..13ad65e
+Fast-forward
+ README | 2 ++
+ 1 file changed, 2 insertions(+)
+git merge 명령에도 -S 옵션을 붙일 수 있다. 이 옵션을 붙이면 Merge 커밋을 서명하겠다는 의미이다. 아래 예제에서
+Merge 할 모든 커밋이 올바르게 서명됐는지 확인하고 Merge 커밋에도 서명을 하는 것을 보자.
+$ git merge --verify-signatures -S  signed-branch
+Commit 13ad65e has a good GPG signature by Scott Chacon (Git signing key)
+<schacon@gmail.com>
+You need a passphrase to unlock the secret key for
+user: "Scott Chacon (Git signing key) <schacon@gmail.com>"
+2048-bit RSA key, ID 0A46826A, created 2014-06-04
+Merge made by the 'recursive' strategy.
+ README | 2 ++
+ 1 file changed, 2 insertions(+)
+모두가 서명하게 하려면
+태그와 커밋에 서명하는 것은 멋지지만 실제로 서명 기능을 사용하려면 팀의 모든 사람이 서명 기능을 이해하고
+사용해야만 한다. 만약 그렇지 않으면 팀원들에게 커밋을 어떻게 서명된 커밋으로 재생성하는지 가르치느라 세월을
+보내게 될 것이다. 반드시 작업에 적용하기 전에 GPG 서명 기능을 이해하고 이 기능이 가지는 장점을 완전히 파악하고
+있어야만 한다.
+검색
+프로젝트가 크든 작든 함수의 정의나 함수가 호출되는 곳을 검색해야 하는 경우가 많다. 함수의 히스토리를 찾아보기도
+235
+
+=== PDF Page 241 ===
+
+한다. Git은 데이터베이스에 저장된 코드나 커밋에서 원하는 부분을 빠르고 쉽게 검색하는 도구가 여러 가지 있으며
+앞으로 함께 살펴보자.
+Git Grep
+Git의 grep 명령을 이용하면 커밋 트리의 내용이나 워킹 디렉토리의 내용을 문자열이나 정규표현식을 이용해 쉽게 찾을
+수 있다. Git 소스를 예로 들어 명령을 어떻게 사용하는지 알아보자.
+기본적으로 대상을 지정하지 않으면 워킹 디렉토리의 파일에서 찾는다. 명령을 실행할 때 -n 또는 --line-number
+옵션을 추가하면 찾을 문자열이 위치한 라인 번호도 같이 출력한다.
+$ git grep -n gmtime_r
+compat/gmtime.c:3:#undef gmtime_r
+compat/gmtime.c:8:      return git_gmtime_r(timep, &result);
+compat/gmtime.c:11:struct tm *git_gmtime_r(const time_t *timep, struct tm
+*result)
+compat/gmtime.c:16:     ret = gmtime_r(timep, result);
+compat/mingw.c:826:struct tm *gmtime_r(const time_t *timep, struct tm
+*result)
+compat/mingw.h:206:struct tm *gmtime_r(const time_t *timep, struct tm
+*result);
+date.c:482:             if (gmtime_r(&now, &now_tm))
+date.c:545:             if (gmtime_r(&time, tm)) {
+date.c:758:             /* gmtime_r() in match_digit() may have clobbered
+it */
+git-compat-util.h:1138:struct tm *git_gmtime_r(const time_t *, struct tm
+*);
+git-compat-util.h:1140:#define gmtime_r git_gmtime_r
+git grep 명령에서 쓸만한 몇 가지 옵션을 좀 더 살펴보자.
+예를 들어 위의 결과 대신 어떤 파일에서 몇 개나 찾았는지만 알고 싶다면 -c 또는 --count 옵션을 이용한다.
+$ git grep --count gmtime_r
+compat/gmtime.c:4
+compat/mingw.c:1
+compat/mingw.h:1
+date.c:3
+git-compat-util.h:2
+매칭되는 라인이 있는 함수나 메서드를 찾고 싶다면 -p 또는 --show-function 옵션을 준다.
+236
+
+=== PDF Page 242 ===
+
+$ git grep -p gmtime_r *.c
+date.c=static int match_multi_number(timestamp_t num, char c, const char
+*date,
+date.c:         if (gmtime_r(&now, &now_tm))
+date.c=static int match_digit(const char *date, struct tm *tm, int
+*offset, int *tm_gmt)
+date.c:         if (gmtime_r(&time, tm)) {
+date.c=int parse_date_basic(const char *date, timestamp_t *timestamp, int
+*offset)
+date.c:         /* gmtime_r() in match_digit() may have clobbered it */
+gmtime_r 함수를 date.c 파일에서 match_multi_number, match_digit 함수에서 호출하고 있다는 걸 확인할
+수 있다(세 번째로 호출하는 결과는 주석 안에 있는 것을 확인할 수 있다).
+--and 옵션을 이용해서 여러 단어가 한 라인에 동시에 나타나는 줄 찾기 같은 복잡한 조합으로 검색할 수 있다. 예를 들어
+“LINK” 나 “BUF_MAX” 둘 중 하나를 포함한 상수 정의를 1.8.0 이전 버전의 Git 소스 코드에서 검색하는 것을 할 수 있다(
+--break 와 --heading 옵션을 붙여 더 읽기 쉬운 형태로 잘라서 출력할 수도 있다).
+$ git grep --break --heading \
+    -n -e '#define' --and \( -e LINK -e BUF_MAX \) v1.8.0
+v1.8.0:builtin/index-pack.c
+62:#define FLAG_LINK (1u<<20)
+v1.8.0:cache.h
+73:#define S_IFGITLINK  0160000
+74:#define S_ISGITLINK(m)       (((m) & S_IFMT) == S_IFGITLINK)
+v1.8.0:environment.c
+54:#define OBJECT_CREATION_MODE OBJECT_CREATION_USES_HARDLINKS
+v1.8.0:strbuf.c
+326:#define STRBUF_MAXLINK (2*PATH_MAX)
+v1.8.0:symlinks.c
+53:#define FL_SYMLINK  (1 << 2)
+v1.8.0:zlib.c
+30:/* #define ZLIB_BUF_MAX ((uInt)-1) */
+31:#define ZLIB_BUF_MAX ((uInt) 1024 * 1024 * 1024) /* 1GB */
+git grep 명령은 grep 이나 ack 같은 일반적인 검색 도구보다 몇 가지 좋은 점이 있다. 우선 매우 빠르다. 또한, 워킹
+디렉토리만이 아니라 Git 히스토리 내의 어떠한 정보라도 찾아낼 수 있다. 위의 예제에서 이전 버전의 소스에서도 특정
+단어를 찾아낸 것을 볼 수 있다.
+237
+
+=== PDF Page 243 ===
+
+Git 로그 검색
+어떤 변수가 어디에 있는지를 찾아보는 게 아니라, 히스토리에서 언제 추가되거나 변경됐는지 찾아볼 수도 있다. git
+log 명령을 이용하면 Diff 내용도 검색하여 어떤 커밋에서 찾고자 하는 내용을 추가했는지 찾을 수 있다.
+ZLIB_BUF_MAX 라는 상수가 가장 처음 나타난 때를 찾는 문제라면 -S 옵션(“pickaxe(곡괭이)” 옵션이라 한다)을
+이용해 해당 문자열이 추가된 커밋과 없어진 커밋만 검색할 수 있다.
+$ git log -S ZLIB_BUF_MAX --oneline
+e01503b zlib: allow feeding more than 4GB in one go
+ef49a7a zlib: zlib can only process 4GB at a time
+위 두 커밋의 변경 사항을 살펴보면 ef49a7a 에서 ZLIB_BUF_MAX 상수가 처음 나오고 e01503b 에서는 변경된 것을
+알 수 있다.
+더 세세한 조건을 걸어 찾고 싶다면 로그를 검색할 때 -G 옵션으로 정규표현식을 써서 검색하면 된다.
+라인 로그 검색
+진짜 미친 듯이 좋은 로그 검색 도구가 또 있다. 라인 히스토리 검색이다. git log 를 쓸 때 -L 옵션을 붙이면 어떤 함수나
+한 라인의 히스토리를 볼 수 있다.
+예를 들어, zlib.c 파일에 있는 git_deflate_bound 함수의 모든 변경 사항들을 보길 원한다고 생각해보자. git
+log -L :git_deflate_bound:zlib.c 라고 명령 실행하면 된다. 이 명령을 실행하면 함수의 시작과 끝을
+인식해서 함수에서 일어난 모든 히스토리를 함수가 처음 만들어진 때부터 Patch를 나열하여 보여준다.
+238
+
+=== PDF Page 244 ===
+
+$ git log -L :git_deflate_bound:zlib.c
+commit ef49a7a0126d64359c974b4b3b71d7ad42ee3bca
+Author: Junio C Hamano <gitster@pobox.com>
+Date:   Fri Jun 10 11:52:15 2011 -0700
+    zlib: zlib can only process 4GB at a time
+diff --git a/zlib.c b/zlib.c
+--- a/zlib.c
++++ b/zlib.c
+@@ -85,5 +130,5 @@
+-unsigned long git_deflate_bound(z_streamp strm, unsigned long size)
++unsigned long git_deflate_bound(git_zstream *strm, unsigned long size)
+ {
+-       return deflateBound(strm, size);
++       return deflateBound(&strm->z, size);
+ }
+commit 225a6f1068f71723a910e8565db4e252b3ca21fa
+Author: Junio C Hamano <gitster@pobox.com>
+Date:   Fri Jun 10 11:18:17 2011 -0700
+    zlib: wrap deflateBound() too
+diff --git a/zlib.c b/zlib.c
+--- a/zlib.c
++++ b/zlib.c
+@@ -81,0 +85,5 @@
++unsigned long git_deflate_bound(z_streamp strm, unsigned long size)
++{
++       return deflateBound(strm, size);
++}
++
+Git이 함수의 처음과 끝을 인식하지 못할 때는 정규표현식으로 인식하게 할 수도 있다. git log -L '/unsigned
+long git_deflate_bound/',/^}/:zlib.c 명령으로 위와 같은 결과를 볼 수 있다. 한 라인의 히스토리만
+검색할 수도 있고 여러 라인에 걸친 히스토리를 검색할 수도 있다.
+히스토리 단장하기
+Git으로 일하다 보면 어떤 이유로든 로컬 커밋 히스토리를 수정해야 할 때가 있다. 결정을 나중으로 미룰 수 있던 것은
+Git의 장점이다. Staging Area로 커밋할 파일을 고르는 일을 커밋하는 순간으로 미룰 수 있고 Stash 명령으로 하던 일을
+미룰 수 있다. 게다가 이미 커밋해서 결정한 내용을 수정할 수 있다. 그리고 수정할 수 있는 것도 매우 다양하다. 커밋들의
+순서도 변경할 수 있고 커밋 메시지와 커밋한 파일도 변경할 수 있다. 여러 개의 커밋을 하나로 합치거나 반대로 커밋
+하나를 여러 개로 분리할 수도 있다. 아니면 커밋 전체를 삭제할 수도 있다. 하지만, 이 모든 것은 다른 사람과 코드를
+공유하기 전에 해야 한다.
+239
+
+=== PDF Page 245 ===
+
+이 절에서는 사람들과 코드를 공유하기 전에 커밋 히스토리를 예쁘게 단장하는 방법에 대해서 설명한다.
+
+Git이 동작하는 기본 원리 중 하나는 Git은 로컬에 모든 버전관리 데이터를 로컬에 복사(Clone)
+해두고 있다는 점이다. 이 때문에 자유롭게 히스토리를 로컬에서 수정해 볼 수 있는 자유도 누릴 수
+있다. 다만 로컬의 버전관리 데이터 혹은 커밋이 외부로 Push가 된 후라면 이야기는 완전 딴판이된다.
+Push된 데이터는 수정에 대해선 완전이 끝난 것이다. 고쳐야 할 이유가 생겼더라도 새로 수정작업을
+추가해야지 이전 커밋 자체를 수정할 수는 없다. 그렇기에 온전하게 수정 작업을 마무리했다는 확신
+없이 작업 내용을 공유하는 저장소로 보내는(Push) 것은 피해야 할 행동이다.
+마지막 커밋을 수정하기
+히스토리를 단장하는 일 중에서는 마지막 커밋을 수정하는 것이 가장 자주 하는 일이다. 기본적으로 두 가지로 나눌 수
+있는데 하나는 단순히 커밋 메시지만를 수정하는 것이고 다른 하나는 나중에 수정한 파일을 마지막 커밋 안에 밀어넣는
+것이다.
+커밋 메시지를 수정하는 방법은 매우 간단하다.
+$ git commit --amend
+이 명령은 자동으로 텍스트 편집기를 실행시켜서 마지막 커밋 메시지를 열어준다. 여기에 메시지를 바꾸고 편집기를
+닫으면 편집기는 바뀐 메시지로 마지막 커밋을 수정한다.
+반대로 커밋 메시지가 아니라 프로젝트 내용을 수정한 경우가 있다. 커밋하고 난 후 새로 만든 파일이나 수정한 파일을
+가장 최근 커밋에 집어넣을 수 있다. 기본적으로 방법은 같다. 파일을 수정하고 git add 명령으로 Staging Area에
+넣는다. 그리고 git commit --amend 명령으로 커밋하면 커밋 자체가 수정되면서 추가로 수정사항을 밀어넣을 수
+있다.
+이때 SHA-1 값이 바뀌기 때문에 과거의 커밋을 변경할 때 주의해야 한다. Rebase와 같이 이미 Push 한 커밋은 수정하면
+안 된다.
+
+커밋을 고치는 작업은 커밋 메시지 고치를 덩달아 이끌 수 있음
+커밋을 고치는 것은 커밋 메시지를 고치는 것일수도 있고 또는 커밋 담고 있는 변경 내용을 고치는 것
+일수도 있다. 커밋의 고치는데 있어 추가된 변경 내용이 상당히 있을 경우 커밋 메시지가 충실하게
+담고 있는지 확인해 볼 필요가 있다.
+반대로 커밋을 고치는 내용이 오타를 살짝 고치거나 실수로 빠뜨린 것을 넣는 등 아주 사소하거나 이미
+커밋 메시지가 충분히 이를 반영하고 있을 수 있다. 이런 경우 다음과 같이 --no-edit 옵션을
+사용하면 커밋 메시지를 수정하도록 편집기가 실행되지는 않는다.
+$ git commit --amend --no-edit
+커밋 메시지를 여러 개 수정하기
+최근 커밋이 아니라 예전 커밋을 수정하려면 다른 도구가 필요하다. 히스토리 수정하기 위해 만들어진 도구는 없지만
+rebase 명령을 이용하여 수정할 수 있다. 현재 작업하는 브랜치에서 각 커밋을 하나하나 수정하는 것이 아니라 어느
+240
+
+=== PDF Page 246 ===
+
+시점부터 HEAD까지의 커밋을 한 번에 Rebase 한다. 대화형 Rebase 도구를 사용하면 커밋을 처리할 때마다 잠시
+멈춘다. 그러면 각 커밋의 메시지를 수정하거나 파일을 추가하고 변경하는 등의 일을 진행할 수 있다. git rebase
+명령에 -i 옵션을 추가하면 대화형 모드로 Rebase 할 수 있다. 어떤 시점부터 HEAD까지 Rebase 할 것인지 인자로
+넘기면 된다.
+마지막 커밋 메시지 세 개를 모두 수정하거나 그 중 몇 개를 수정하는 시나리오를 살펴보자. git rebase -i 의 인자로
+편집하려는 마지막 커밋의 부모를 `HEAD~2^`나 `HEAD~3`로 해서 넘긴다. 마지막 세 개의 커밋을 수정하는 것이기
+때문에 `~3`이 좀 더 기억하기 쉽다. 그렇지만, 실질적으로 가리키게 되는 것은 수정하려는 커밋의 부모인 네 번째 이전
+커밋이다.
+$ git rebase -i HEAD~3
+이 명령은 Rebase 하는 것이기 때문에 메시지의 수정 여부에 관계없이 HEAD~3..HEAD 범위에 있는 모든 커밋을
+수정한다. 다시 강조하지만 이미 중앙서버에 Push 한 커밋은 절대 고치지 말아야 한다. Push 한 커밋을 Rebase 하면
+결국 같은 내용을 두 번 Push 하는 것이기 때문에 다른 개발자들이 혼란스러워 할 것이다.
+실행하면 Git은 수정하려는 커밋 목록이 첨부된 스크립트를 텍스트 편집기로 열어준다.
+pick f7f3f6d changed my name a bit
+pick 310154e updated README formatting and added blame
+pick a5f4a0d added cat-file
+# Rebase 710f0f8..a5f4a0d onto 710f0f8
+#
+# Commands:
+#  p, pick = use commit
+#  r, reword = use commit, but edit the commit message
+#  e, edit = use commit, but stop for amending
+#  s, squash = use commit, but meld into previous commit
+#  f, fixup = like "squash", but discard this commit's log message
+#  x, exec = run command (the rest of the line) using shell
+#
+# These lines can be re-ordered; they are executed from top to bottom.
+#
+# If you remove a line here THAT COMMIT WILL BE LOST.
+#
+# However, if you remove everything, the rebase will be aborted.
+#
+# Note that empty commits are commented out
+이 커밋은 모두 log 명령과는 정반대의 순서로 나열된다. log 명령을 실행하면 아래와 같은 결과를 볼 수 있다.
+241
+
+=== PDF Page 247 ===
+
+$ git log --pretty=format:"%h %s" HEAD~3..HEAD
+a5f4a0d added cat-file
+310154e updated README formatting and added blame
+f7f3f6d changed my name a bit
+위 결과의 역순임을 기억하자. 대화형 Rebase는 스크립트에 적혀 있는 순서대로 `HEAD~3`부터 적용하기 시작하고
+위에서 아래로 각각의 커밋을 순서대로 수정한다. 순서대로 적용하는 것이기 때문에 제일 위에 있는 것이 최신이 아니라
+가장 오래된 것이다.
+특정 커밋에서 실행을 멈추게 하려면 스크립트를 수정해야 한다. pick 이라는 단어를 'edit’로 수정하면 그 커밋에서
+멈춘다. 가장 오래된 커밋 메시지를 수정하려면 아래와 같이 편집한다.
+edit f7f3f6d changed my name a bit
+pick 310154e updated README formatting and added blame
+pick a5f4a0d added cat-file
+저장하고 편집기를 종료하면 Git은 목록에 있는 커밋 중에서 가장 오래된 커밋으로 이동하고, 아래와 같은 메시지를
+보여주고, 명령 프롬프트를 보여준다.
+$ git rebase -i HEAD~3
+Stopped at f7f3f6d... changed my name a bit
+You can amend the commit now, with
+       git commit --amend
+Once you’re satisfied with your changes, run
+       git rebase --continue
+명령 프롬프트가 나타날 때 Git은 Rebase 과정에서 현재 정확히 뭘 해야 하는지 메시지로 알려준다. 아래와 같은 명령을
+실행하고
+$ git commit --amend
+커밋 메시지를 수정하고 텍스트 편집기를 종료하고 나서 아래 명령을 실행한다.
+$ git rebase --continue
+이렇게 나머지 두 개의 커밋에 적용하면 끝이다. 다른 것도 pick을 edit로 수정해서 이 작업을 몇 번이든 반복할 수 있다.
+매번 Git이 멈출 때마다 커밋을 정정할 수 있고 완료할 때까지 계속 할 수 있다.
+242
+
+=== PDF Page 248 ===
+
+커밋 순서 바꾸기
+대화형 Rebase 도구로 커밋 전체를 삭제하거나 순서를 조정할 수 있다. “added cat-file” 커밋을 삭제하고 다른 두
+커밋의 순서를 변경하려면 아래와 같은 Rebase 스크립트를
+pick f7f3f6d changed my name a bit
+pick 310154e updated README formatting and added blame
+pick a5f4a0d added cat-file
+아래와 같이 수정한다.
+pick 310154e updated README formatting and added blame
+pick f7f3f6d changed my name a bit
+수정한 내용을 저장하고 편집기를 종료하면 Git은 브랜치를 이 커밋의 부모로 이동시키고서 310154e 와 f7f3f6d 를
+순서대로 적용한다. 명령이 끝나고 나면 커밋 순서가 변경됐고 “added cat-file” 커밋이 제거된 것을 확인할 수 있다.
+커밋 합치기
+대화형 Rebase 명령을 이용하여 여러 개의 커밋을 꾹꾹 눌러서 커밋 하나로 만들어 버릴 수 있다. Rebase 스크립트에
+자동으로 포함된 도움말에 설명이 있다.
+#
+# Commands:
+#  p, pick = use commit
+#  r, reword = use commit, but edit the commit message
+#  e, edit = use commit, but stop for amending
+#  s, squash = use commit, but meld into previous commit
+#  f, fixup = like "squash", but discard this commit's log message
+#  x, exec = run command (the rest of the line) using shell
+#
+# These lines can be re-ordered; they are executed from top to bottom.
+#
+# If you remove a line here THAT COMMIT WILL BE LOST.
+#
+# However, if you remove everything, the rebase will be aborted.
+#
+# Note that empty commits are commented out
+“pick” 이나 “edit” 말고 “squash” 를 입력하면 Git은 해당 커밋과 바로 이전 커밋을 합칠 것이고 커밋 메시지도 Merge
+한다. 그래서 3개의 커밋을 모두 합치려면 스크립트를 아래와 같이 수정한다.
+243
+
+=== PDF Page 249 ===
+
+pick f7f3f6d changed my name a bit
+squash 310154e updated README formatting and added blame
+squash a5f4a0d added cat-file
+저장하고 나서 편집기를 종료하면 Git은 3개의 커밋 메시지를 Merge 할 수 있도록 에디터를 바로 실행해준다.
+# This is a combination of 3 commits.
+# The first commit's message is:
+changed my name a bit
+# This is the 2nd commit message:
+updated README formatting and added blame
+# This is the 3rd commit message:
+added cat-file
+이 메시지를 저장하면 3개의 커밋이 모두 합쳐진 커밋 한 개만 남는다.
+커밋 분리하기
+커밋을 분리한다는 것은 기존의 커밋을 해제하고(혹은 되돌려 놓고) Stage를 여러 개로 분리하고 나서 그것을 원하는
+횟수만큼 다시 커밋하는 것이다. 예로 들었던 커밋 세 개 중에서 가운데 것을 분리해보자. 이 커밋의 “updated README
+formatting and added blame” 을 “updated README formatting” 과 “added blame” 으로 분리하는 것이다.
+rebase -i 스크립트에서 해당 커밋을 "edit"로 변경한다.
+pick f7f3f6d changed my name a bit
+edit 310154e updated README formatting and added blame
+pick a5f4a0d added cat-file
+저장하고 나서 명령 프롬프트로 넘어간 다음에 그 커밋을 해제하고 그 내용을 다시 두 개로 나눠서 커밋하면 된다.
+저장하고 편집기를 종료하면 Git은 제일 오래된 커밋의 부모로 이동하고서 f7f3f6d 과 310154e 을 처리하고 콘솔
+프롬프트를 보여준다. 여기서 커밋을 해제하는 git reset HEAD^ 라는 명령으로 커밋을 해제한다. 그러면 수정했던
+파일은 Unstaged 상태가 된다. 그다음에 파일을 Stage 한 후 커밋하는 일을 원하는 만큼 반복하고 나서 git rebase
+--continue 라는 명령을 실행하면 남은 Rebase 작업이 끝난다.
+$ git reset HEAD^
+$ git add README
+$ git commit -m 'updated README formatting'
+$ git add lib/simplegit.rb
+$ git commit -m 'added blame'
+$ git rebase --continue
+244
+
+=== PDF Page 250 ===
+
+나머지 a5f4a0d 커밋도 처리되면 히스토리는 아래와 같다.
+$ git log -4 --pretty=format:"%h %s"
+1c002dd added cat-file
+9b29157 added blame
+35cfb2b updated README formatting
+f3cc40e changed my name a bit
+다시 강조하지만 Rebase 하면 목록에 있는 모든 커밋의 SHA-1 값은 변경된다. 절대로 이미 서버에 Push 한 커밋을
+수정하면 안 된다.
+filter-branch는 포크레인
+수정해야 하는 커밋이 너무 많아서 Rebase 스크립트로 수정하기 어려울 것 같으면 다른 방법을 사용하는 것이 좋다. 모든
+커밋의 이메일 주소를 변경하거나 어떤 파일을 삭제하는 경우를 살펴보자. filter-branch 라는 명령으로 수정할 수
+있는데 Rebase가 삽이라면 이 명령은 포크레인이라고 할 수 있다. filter-branch 도 역시 수정하려는 커밋이 이미
+공개돼서 다른 사람과 함께 공유하는 중이라면 사용하지 말아야 한다. 하지만, 잘 쓰면 꽤 유용하다. filter-branch 가
+유용한 경우를 예로 들어 설명하기 때문에 여기에서 대충 어떤 경우에 유용할지 배울 수 있다.
+모든 커밋에서 파일을 제거하기
+갑자기 누군가 생각 없이 git add . 같은 명령을 실행해서 공룡 똥 덩어리를 커밋했거나 실수로 암호가 포함된 파일을
+커밋해서 이런 파일을 다시 삭제해야 하는 상황을 살펴보자. 이런 상황은 생각보다 자주 발생한다. filter-branch 는
+히스토리 전체에서 필요한 것만 골라내는 데 사용하는 도구다. filter-branch 의 --tree-filter 라는 옵션을
+사용하면 히스토리에서 passwords.txt 파일을 아예 제거할 수 있다.
+$ git filter-branch --tree-filter 'rm -f passwords.txt' HEAD
+Rewrite 6b9b3cf04e7c5686a9cb838c3f36a8cb6a0fc2bd (21/21)
+Ref 'refs/heads/master' was rewritten
+--tree-filter 옵션은 프로젝트를 Checkout 한 후에 각 커밋에 명시한 명령을 실행시키고 그 결과를 다시 커밋한다.
+이 경우에는 각 스냅샷에 passwords.txt 파일이 있으면 그 파일을 삭제한다. 실수로 편집기의 백업파일을 커밋했으면
+git filter-branch --tree-filter 'rm -f *~' HEAD 라고 실행해서 삭제할 수 있다.
+이 명령은 모든 파일과 커밋을 정리하고 브랜치 포인터를 다시 복원해준다. 이런 작업은 테스팅 브랜치에서 실험하고 나서
+master 브랜치에 적용하는 게 좋다. filter-branch 명령에 --all 옵션을 추가하면 모든 브랜치에 적용할 수 있다.
+하위 디렉토리를 루트 디렉토리로 만들기
+다른 VCS에서 코드를 임포트하면 그 VCS만을 위한 디렉토리가 있을 수 있다. SVN에서 코드를 임포트하면 trunk, tags,
+branch 디렉토리가 포함된다. 모든 커밋에 대해 trunk 디렉토리를 프로젝트 루트 디렉토리로 만들 때도 filter-
+branch 명령이 유용하다.
+245
+
+=== PDF Page 251 ===
+
+$ git filter-branch --subdirectory-filter trunk HEAD
+Rewrite 856f0bf61e41a27326cdae8f09fe708d679f596f (12/12)
+Ref 'refs/heads/master' was rewritten
+이제 trunk 디렉토리를 루트 디렉토리로 만들었다. Git은 입력한 디렉토리와 관련이 없는 커밋을 자동으로 삭제한다.
+모든 커밋의 이메일 주소를 수정하기
+프로젝트를 오픈소스로 공개할 때 아마도 회사 이메일 주소로 커밋된 것을 개인 이메일 주소로 변경해야 한다. 아니면 아예
+git config 로 이름과 이메일 주소를 설정하는 것을 잊었을 수도 있다. 자신의 이메일 주소만 변경하도록 조심해야
+한다. filter-branch 명령의 --commit-filter 옵션을 사용하여 해당 커밋만 골라서 이메일 주소를 수정할 수
+있다.
+$ git filter-branch --commit-filter '
+        if [ "$GIT_AUTHOR_EMAIL" = "schacon@localhost" ];
+        then
+                GIT_AUTHOR_NAME="Scott Chacon";
+                GIT_AUTHOR_EMAIL="schacon@example.com";
+                git commit-tree "$@";
+        else
+                git commit-tree "$@";
+        fi' HEAD
+이메일 주소를 새 주소로 변경했다. 모든 커밋은 부모의 SHA-1 값을 가지고 있기 때문에 조건에 만족하는 커밋의 SHA-
+1값만 바뀌는 것이 아니라 모든 커밋의 SHA-1 값이 바뀐다.
+Reset 명확히 알고 가기
+Git의 다른 특별한 도구를 더 살펴보기 보기 전에 reset 과 checkout 에 대해 이야기를 해보자. 이 두 명령은 Git을 처음
+사용하는 사람을 가장 헷갈리게 하는 부분이다. 제대로 이해하고 사용할 수 없을 것으로 보일 정도로 많은 기능을 지녔다.
+이해하기 쉽게 간단한 비유를 들어 설명해보자.
+세 개의 트리
+Git을 서로 다른 세 트리를 관리하는 컨텐츠 관리자로 생각하면 reset 과 checkout 을 좀 더 쉽게 이해할 수 있다.
+여기서 “트리” 란 실제로는 “파일의 묶음” 이다. 자료구조의 트리가 아니다 세 트리 중 Index는 트리도 아니지만, 이해를
+쉽게 하려고 일단 트리라고 한다.
+Git은 일반적으로 세 가지 트리를 관리하는 시스템이다.
+트리 역할
+HEAD 마지막 커밋 스냅샷, 다음 커밋의 부모 커밋
+Index 다음에 커밋할 스냅샷
+워킹 디렉토리 샌드박스
+246
+
+=== PDF Page 252 ===
+
+HEAD
+HEAD는 현재 브랜치를 가리키는 포인터이며, 브랜치는 브랜치에 담긴 커밋 중 가장 마지막 커밋을 가리킨다. 지금의
+HEAD가 가리키는 커밋은 바로 다음 커밋의 부모가 된다. 단순하게 생각하면 HEAD는 *현재 브랜치 마지막 커밋의
+스냅샷*이다.
+HEAD가 가리키는 스냅샷을 살펴보기는 쉽다. 아래는 HEAD 스냅샷의 디렉토리 리스팅과 각 파일의 SHA-1 체크섬을
+보여주는 예제다.
+$ git cat-file -p HEAD
+tree cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+author Scott Chacon  1301511835 -0700
+committer Scott Chacon  1301511835 -0700
+initial commit
+$ git ls-tree -r HEAD
+100644 blob a906cb2a4a904a152...   README
+100644 blob 8f94139338f9404f2...   Rakefile
+040000 tree 99f1a6d12cb4b6f19...   lib
+cat-file 와 ls-tree 명령은 일상적으로는 잘 사용하지 않는 저수준 명령이다. 이런 저수준 명령을 “plumbing”
+명령이라고 한다. Git이 실제로 무슨 일을 하는지 볼 때 유용하다.
+Index
+Index는 바로 다음에 커밋할 것들이다. 이미 앞에서 우리는 이런 개념을 “Staging Area” 라고 배운 바 있다. “Staging
+Area” 는 사용자가 git commit 명령을 실행했을 때 Git이 처리할 것들이 있는 곳이다.
+먼저 Index는 워킹 디렉토리에서 마지막으로 Checkout 한 브랜치의 파일 목록과 파일 내용으로 채워진다. 이후 파일
+변경작업을 하고 변경한 내용으로 Index를 업데이트 할 수 있다. 이렇게 업데이트 하고 git commit 명령을 실행하면
+Index는 새 커밋으로 변환된다.
+$ git ls-files -s
+100644 a906cb2a4a904a152e80877d4088654daad0c859 0   README
+100644 8f94139338f9404f26296befa88755fc2598c289 0   Rakefile
+100644 47c6340d6459e05787f644c2447d2595f5d3a54b 0   lib/simplegit.rb
+또 다른 저수준 git ls-files 명령은 훨씬 더 장막 뒤에 가려져 있는 명령으로 이를 실행하면 현재 Index가 어떤
+상태인지를 확인할 수 있다.
+Index는 엄밀히 말해 트리구조는 아니다. 사실 Index는 평평한 구조로 구현되어 있다. 여기에서는 쉽게 이해할 수 있도록
+그냥 트리라고 설명한다.
+247
+
+=== PDF Page 253 ===
+
+워킹 디렉토리
+마지막으로 워킹 디렉토리를 살펴보자. 위의 두 트리는 파일과 그 내용을 효율적인 형태로 .git 디렉토리에 저장한다.
+하지만, 사람이 알아보기 어렵다. 워킹 디렉토리는 실제 파일로 존재한다. 바로 눈에 보이기 때문에 사용자가 편집하기
+수월하다. 워킹 디렉토리는 샌드박스로 생각하자. 커밋하기 전에는 Index(Staging Area)에 올려놓고 얼마든지 변경할 수
+있다.
+$ tree
+.
+├── README
+├── Rakefile
+└── lib
+    └── simplegit.rb
+1 directory, 3 files
+워크플로
+Git의 주목적은 프로젝트의 스냅샷을 지속적으로 저장하는 것이다. 이 트리 세 개를 사용해 더 나은 상태로 관리한다.
+이 과정을 시각화해보자. 파일이 하나 있는 디렉토리로 이동한다. 이걸 파일의 v1이라고 하고 파란색으로 표시한다. git
+init 명령을 실행하면 Git 저장소가 생기고 HEAD는 아직 없는 브랜치를 가리킨다(master 는 아직 없다).
+248
+
+=== PDF Page 254 ===
+
+이 시점에서는 워킹 디렉토리 트리에만 데이터가 있다.
+이제 파일을 커밋해보자. git add 명령으로 워킹 디렉토리의 내용을 Index로 복사한다.
+249
+
+=== PDF Page 255 ===
+
+그리고 git commit 명령을 실행한다. 그러면 Index의 내용을 스냅샷으로 영구히 저장하고 그 스냅샷을 가리키는 커밋
+객체를 만든다. 그리고는 master 가 그 커밋 객체를 가리키도록 한다.
+250
+
+=== PDF Page 256 ===
+
+이때 git status 명령을 실행하면 아무런 변경 사항이 없다고 나온다. 세 트리 모두가 같기 때문이다.
+다시 파일 내용을 바꾸고 커밋해보자. 위에서 했던 것과 과정은 비슷하다. 먼저 워킹 디렉토리의 파일을 고친다. 이를 이
+파일의 v2라고 하자. 이건 빨간색으로 표시한다.
+251
+
+=== PDF Page 257 ===
+
+git status 명령을 바로 실행하면 “Changes not staged for commit, ” 아래에 빨간색으로 된 파일을 볼 수 있다.
+Index와 워킹 디렉토리가 다른 내용을 담고 있기 때문에 그렇다. git add 명령을 실행해서 변경 사항을 Index에
+올려주자.
+252
+
+=== PDF Page 258 ===
+
+이 시점에서 git status 명령을 실행하면 “Changes to be committed” 아래에 파일 이름이 녹색으로 변한다.
+Index와 HEAD의 다른 파일들이 여기에 표시된다. 즉 다음 커밋할 것과 지금 마지막 커밋이 다르다는 말이다. 마지막으로
+git commit 명령을 실행해 커밋한다.
+253
+
+=== PDF Page 259 ===
+
+이제 git status 명령을 실행하면 아무것도 출력하지 않는다. 세 개의 트리의 내용이 다시 같아졌기 때문이다.
+브랜치를 바꾸거나 Clone 명령도 내부에서는 비슷한 절차를 밟는다. 브랜치를 Checkout 하면, HEAD가 새로운
+브랜치를 가리키도록 바뀌고, 새로운 커밋의 스냅샷을 Index에 놓는다. 그리고 Index의 내용을 워킹 디렉토리로
+복사한다.
+Reset 의 역할
+위의 트리 세 개를 이해하면 reset 명령이 어떻게 동작하는지 쉽게 알 수 있다.
+예로 들어 file.txt 파일 하나를 수정하고 커밋한다. 이것을 세 번 반복한다. 그러면 히스토리는 아래와 같이 된다.
+254
+
+=== PDF Page 260 ===
+
+자 이제 reset 명령이 정확히 어떤 일을 하는지 낱낱이 파헤쳐보자. reset 명령은 이 세 트리를 간단하고 예측 가능한
+방법으로 조작한다. 트리를 조작하는 동작은 세 단계 이하로 이루어진다.
+1 단계: HEAD 이동
+reset 명령이 하는 첫 번째 일은 HEAD 브랜치를 이동시킨다. checkout 명령처럼 HEAD가 가리키는 브랜치를
+바꾸지는 않는다. HEAD는 계속 현재 브랜치를 가리키고 있고, 현재 브랜치가 가리키는 커밋을 바꾼다. HEAD가 master
+브랜치를 가리키고 있다면(즉 master 브랜치를 Checkout 하고 작업하고 있다면) git reset 9e5e6a4 명령은
+master 브랜치가 `9e5e6a4`를 가리키게 한다.
+255
+
+=== PDF Page 261 ===
+
+reset 명령에 커밋을 넘기고 실행하면 언제나 이런 작업을 수행한다. reset --soft 옵션을 사용하면 딱 여기까지
+진행하고 동작을 멈춘다.
+이제 위의 다이어그램을 보고 어떤 일이 일어난 것인지 생각해보자. reset 명령은 가장 최근의 git commit 명령을
+되돌린다. git commit 명령을 실행하면 Git은 새로운 커밋을 생성하고 HEAD가 가리키는 브랜치가 새로운 커밋을
+가리키도록 업데이트한다. reset 명령 뒤에 HEAD~ (HEAD의 부모 커밋)를 주면 Index나 워킹 디렉토리는 그대로
+놔두고 브랜치가 가리키는 커밋만 이전으로 되돌린다. Index를 업데이트한 다음에 git commit 명령를 실행하면 git
+commit --amend 명령의 결과와 같아진다(마지막 커밋을 수정하기를 참조).
+2 단계: Index 업데이트 (--mixed)
+여기서 git status 명령을 실행하면 Index와 reset 명령으로 이동시킨 HEAD의 다른 점이 녹색으로 출력된다.
+reset 명령은 여기서 한 발짝 더 나아가 Index를 현재 HEAD가 가리키는 스냅샷으로 업데이트할 수 있다.
+256
+
+=== PDF Page 262 ===
+
+--mixed 옵션을 주고 실행하면 reset 명령은 여기까지 하고 멈춘다. reset 명령을 실행할 때 아무 옵션도 주지 않으면
+기본적으로 --mixed 옵션으로 동작한다(예제와 같이 git reset HEAD~ 처럼 명령을 실행하는 경우).
+위의 다이어그램을 보고 어떤 일이 일어날지 한 번 더 생각해보자. 가리키는 대상을 가장 최근의 커밋 으로 되돌리는 것은
+같다. 그러고 나서 Staging Area 를 비우기까지 한다. git commit 명령도 되돌리고 git add 명령까지 되돌리는
+것이다.
+3 단계: 워킹 디렉토리 업데이트 (--hard)
+reset 명령은 세 번째로 워킹 디렉토리까지 업데이트한다. --hard 옵션을 사용하면 reset 명령은 이 단계까지
+수행한다.
+257
+
+=== PDF Page 263 ===
+
+이 과정은 어떻게 동작하는지 가늠해보자. reset 명령을 통해 git add 와 git commit 명령으로 생성한 마지막
+커밋을 되돌린다. 그리고 워킹 디렉토리의 내용까지도 되돌린다.
+이 --hard 옵션은 매우 매우 중요하다. reset 명령을 위험하게 만드는 유일한 옵션이다. Git에는 데이터를 실제로
+삭제하는 방법이 별로 없다. 이 삭제하는 방법은 그 중 하나다. reset 명령을 어떻게 사용하더라도 간단히 결과를 되돌릴
+수 있다. 하지만 --hard 옵션은 되돌리는 것이 불가능하다. 이 옵션을 사용하면 워킹 디렉토리의 파일까지 강제로
+덮어쓴다. 이 예제는 파일의 v3버전을 아직 Git이 커밋으로 보관하고 있기 때문에 reflog 를 이용해서 다시 복원할 수
+있다. 만약 커밋한 적 없다면 Git이 덮어쓴 데이터는 복원할 수 없다.
+복습
+reset 명령은 정해진 순서대로 세 개의 트리를 덮어써 나가다가 옵션에 따라 지정한 곳에서 멈춘다.
+1. HEAD가 가리키는 브랜치를 옮긴다. (--soft 옵션이 붙으면 여기까지)
+2. Index를 HEAD가 가리키는 상태로 만든다. (--hard 옵션이 붙지 않았으면 여기까지)
+258
+
+=== PDF Page 264 ===
+
+3. 워킹 디렉토리를 Index의 상태로 만든다.
+경로를 주고 Reset 하기
+지금까지 reset 명령을 실행하는 기본 형태와 사용 방법을 살펴봤다. reset 명령을 실행할 때 경로를 지정하면 1단계를
+건너뛰고 정해진 경로의 파일에만 나머지 reset 단계를 적용한다. 이는 당연한 이야기다. HEAD는 포인터인데 경로에
+따라 파일별로 기준이 되는 커밋을 부분적으로 적용하는 건 불가능하다. 하지만, Index나 워킹 디렉토리는 일부분만
+갱신할 수 있다. 따라서 2, 3단계는 가능하다.
+예를 들어 git reset file.txt 명령을 실행한다고 가정하자. 이 형식은(커밋의 해시 값이나 브랜치도 표기하지 않고
+--soft 나 --hard 도 표기하지 않은) git reset --mixed HEAD file.txt 를 짧게 쓴 것이다.
+1. HEAD의 브랜치를 옮긴다. (건너뜀)
+2. Index를 HEAD가 가리키는 상태로 만든다. (여기서 멈춤)
+본질적으로는 file.txt 파일을 HEAD에서 Index로 복사하는 것뿐이다.
+259
+
+=== PDF Page 265 ===
+
+이 명령은 해당 파일을 Unstaged 상태로 만든다. 이 명령의 다이어그램과 git add 명령을 비교해보면 정확히 반대인
+것을 알 수 있다.
+이것이 git status 명령에서 이 명령을 보여주는 이유다. 이 명령으로 파일을 Unstaged 상태로 만들 수 있다. (더 자세한
+내용은 파일 상태를 Unstage로 변경하기를 참고한다.)
+특정 커밋을 명시하면 Git은 “HEAD에서 파일을 가져오는” 것이 아니라 그 커밋에서 파일을 가져온다. `git
+reset eb43bf file.txt 명령과 같이 실행한다.
+260
+
+=== PDF Page 266 ===
+
+이 명령을 실행한 것과 같은 결과를 만들려면 워킹 디렉토리의 파일을 v1으로 되돌리고 git add 명령으로 Index를
+v1으로 만들고 나서 다시 워킹 디렉토리를 v3로 되돌려야 한다(결과만 같다는 얘기다). 이 상태에서 git commit
+명령을 실행하면 v1으로 되돌린 파일 내용을 기록한다. 워킹 디렉토리를 사용하지 않았다.
+git add 명령처럼 reset 명령도 Hunk 단위로 사용할 수 있다. --patch 옵션을 사용해서 Staging Area에서 Hunk
+단위로 Unstaged 상태로 만들 수 있다. 이렇게 선택적으로 Unstaged 상태로 만들거나 내리거나 이전 버전으로 복원시킬
+수 있다.
+합치기(Squash)
+여러 커밋을 커밋 하나로 합치는 재밌는 도구를 알아보자.
+“oops. ” 나 “WIP”, “forgot this file” 같은 깃털같이 가벼운 커밋들이 있다고 해보자. 이럴 때는 reset 명령으로
+커밋들을 하나로 합쳐서 남들에게 똑똑한 척할 수 있다. (커밋 합치기를 하는 명령어가 따로 있지만, 여기서는 reset
+명령을 쓰는 것이 더 간단할 때도 있다는 것을 보여준다.)
+이런 프로젝트가 있다고 생각해보자. 첫 번째 커밋은 파일 하나를 추가했고, 두 번째 커밋은 기존 파일을 수정하고 새로운
+261
+
+=== PDF Page 267 ===
+
+파일도 추가했다. 세 번째 커밋은 첫 번째 파일을 다시 수정했다. 두 번째 커밋은 아직 작업 중인 커밋으로 이 커밋을 세
+번째 커밋과 합치고 싶은 상황이다.
+git reset --soft HEAD~2 명령을 실행하여 HEAD 포인터를 이전 커밋으로 되돌릴 수 있다(히스토리에서 그대로
+유지할 처음 커밋 말이다).
+262
+
+=== PDF Page 268 ===
+
+이 상황에서 git commit 명령을 실행한다.
+263
+
+=== PDF Page 269 ===
+
+이제 사람들에게 공개할만한 히스토리가 만들어졌다. file-a.txt 파일이 있는 v1 커밋이 하나 그대로 있고, 두 번째
+커밋에는 v3버전의 file-a.txt 파일과 새로 추가된 file-b.txt 파일이 있다. v2 버전은 더는 히스토리에 없다.
+Checkout
+아마도 checkout 명령과 reset 명령에 어떤 차이가 있는지 궁금할 것이다. reset 명령과 마찬가지로 checkout
+명령도 위의 세 트리를 조작한다. checkout 명령도 파일 경로를 쓰느냐 안 쓰느냐에 따라 동작이 다르다.
+264
+
+=== PDF Page 270 ===
+
+경로 없음
+git checkout [branch] 명령은 git reset --hard [branch] 명령과 비슷하게 [branch] 스냅샷을
+기준으로 세 트리를 조작한다. 하지만, 두 가지 사항이 다르다.
+첫 번째로 reset --hard 명령과는 달리 checkout 명령은 워킹 디렉토리를 안전하게 다룬다. 저장하지 않은 것이
+있는지 확인해서 날려버리지 않는다는 것을 보장한다. 사실 보기보다 좀 더 똑똑하게 동작한다. 워킹 디렉토리에서 Merge
+작업을 한번 시도해보고 변경하지 않은 파일만 업데이트한다. 반면 reset --hard 명령은 확인하지 않고 단순히 모든
+것을 바꿔버린다.
+두 번째 중요한 차이점은 어떻게 checkout 명령이 HEAD를 업데이트 하는가이다. reset 명령은 HEAD가 가리키는
+브랜치를 움직이지만(브랜치 Refs를 업데이트하지만), checkout 명령은 HEAD 자체를 다른 브랜치로 옮긴다.
+예를 들어 각각 다른 커밋을 가리키는 master 와 develop 브랜치가 있고 현재 워킹 디렉토리는 develop 브랜치라고
+가정해보자(즉 HEAD는 develop 브랜치를 가리킨다). git reset master 명령을 실행하면 develop 브랜치는
+master 브랜치가 가리키는 커밋과 같은 커밋을 가리키게 된다. 반면 git checkout master 명령을 실행하면
+develop 브랜치가 가리키는 커밋은 바뀌지 않고 HEAD가 master 브랜치를 가리키도록 업데이트된다. 이제 HEAD는
+master 브랜치를 가리키게 된다.
+그래서 위 두 경우 모두 HEAD는 결과적으로 A 커밋을 가리키게 되지만 방식은 완전히 다르다. reset 명령은 HEAD가
+가리키는 브랜치의 포인터를 옮겼고 checkout 명령은 HEAD 자체를 옮겼다.
+265
+
+=== PDF Page 271 ===
+
+경로 있음
+checkout 명령을 실행할 때 파일 경로를 줄 수도 있다. reset 명령과 비슷하게 HEAD는 움직이지 않는다. 동작은 git
+reset [branch] file 명령과 비슷하다. Index의 내용이 해당 커밋 버전으로 변경될 뿐만 아니라 워킹 디렉토리의
+파일도 해당 커밋 버전으로 변경된다. 완전히 git reset --hard [branch] file 명령의 동작이랑 같다. 워킹
+디렉토리가 안전하지도 않고 HEAD도 움직이지 않는다.
+git reset 이나 git add 명령처럼 checkout 명령도 --patch 옵션을 사용해서 Hunk 단위로 되돌릴 수 있다.
+요약
+reset 명령이 좀 더 쉬워졌을 거라고 생각한다. 아직 checkout 명령과 정확하게 무엇이 다른지 혼란스럽거나 정확한
+사용법을 다 익히지 못했을 수도 있지만 괜찮다.
+아래에 어떤 명령이 어떤 트리에 영향을 주는지에 대한 요약표를 준비했다. 명령이 HEAD가 가리키는 브랜치를
+움직인다면 “HEAD” 열에 “REF” 라고 적혀 있고 HEAD 자체가 움직인다면 “HEAD” 라고 적혀 있다. 'WD Safe?' 열을 꼭
+보자. 여기에 *NO*라고 적혀 있다면 워킹 디렉토리에 저장하지 않은 내용이 안전하지 않기 때문에 해당 명령을 실행하기
+전에 한 번쯤 더 생각해보아야 한다.
+HEAD Index Workdir WD Safe?
+Commit Level
+reset --soft [commit] REF NO NO YES
+reset [commit] REF YES NO YES
+reset --hard [commit] REF YES YES NO
+checkout <commit> HEAD YES YES YES
+File Level
+reset [commit] <paths> NO YES NO YES
+checkout [commit] <paths> NO YES YES NO
+고급 Merge
+Git의 Merge은 진짜 가볍다. Git에서는 브랜치끼리 몇 번이고 Merge 하기가 쉽다. 오랫동안 합치지 않은 두 브랜치를 한
+번에 Merge 하면 거대한 충돌이 발생한다. 조그마한 충돌을 자주 겪고 그걸 풀어나감으로써 브랜치를 최신으로 유지한다.
+하지만, 가끔 까다로운 충돌도 발생한다. 다른 버전 관리 시스템과 달리 Git은 충돌이 나면 모호한 상황까지 해결하려 들지
+않는다. Git의 철학은 Merge가 잘될지 아닐지 판단하는 것을 잘 하자이다. 충돌이 나도 자동으로 해결하려고 노력하지
+않는다. 오랫동안 따로 유지한 두 브랜치를 Merge 하려면 몇 가지 해야 할 일이 있다.
+이 절에서는 어떤 Git 명령을 사용해서 무슨 일을 해야 하는지 알아보자. 그 외에도 특수한 상황에서 사용하는 Merge
+방법과 Merge를 잘 마무리하는 방법을 소개한다.
+Merge 충돌
+충돌의 기초에서 기초적인 Merge 충돌 해결에 대해서 다뤘다. Git은 복잡한 Merge 충돌이 났을 때 필요한 도구도 가지고
+있다. 무슨 일이 일어났고 어떻게 해결하는 게 나은지 알 수 있다.
+266
+
+=== PDF Page 272 ===
+
+Merge 할 때는 충돌이 날 수 있어서 Merge 하기 전에 워킹 디렉토리를 깔끔히 정리하는 것이 좋다. 워킹 디렉토리에
+작업하던 게 있다면 임시 브랜치에 커밋하거나 Stash 해둔다. 그래야 어떤 일이 일어나도 다시 되돌릴 수 있다. 작업 중인
+파일을 저장하지 않은 채로 Merge 하면 작업했던 일부를 잃을 수도 있다.
+매우 간단한 예제를 따라가 보자. 현재 'hello world’를 출력하는 Ruby 파일을 하나 가지고 있다.
+#! /usr/bin/env ruby
+def hello
+  puts 'hello world'
+end
+hello()
+저장소에 whitespace 브랜치를 생성하고 모든 Unix 개행을 DOS 개행으로 바꾸어 커밋한다. 파일의 모든 라인이
+바뀌었지만, 공백만 바뀌었다. 그 후 “hello world” 문자열을 “hello mundo” 로 바꾼 다음에 커밋한다.
+$ git checkout -b whitespace
+Switched to a new branch 'whitespace'
+$ unix2dos hello.rb
+unix2dos: converting file hello.rb to DOS format ...
+$ git commit -am 'converted hello.rb to DOS'
+[whitespace 3270f76] converted hello.rb to DOS
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+$ vim hello.rb
+$ git diff -b
+diff --git a/hello.rb b/hello.rb
+index ac51efd..e85207e 100755
+--- a/hello.rb
++++ b/hello.rb
+@@ -1,7 +1,7 @@
+ #! /usr/bin/env ruby
+ def hello
+-  puts 'hello world'
++  puts 'hello mundo'^M
+ end
+ hello()
+$ git commit -am 'hello mundo change'
+[whitespace 6d338d2] hello mundo change
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+master 브랜치로 다시 이동한 다음에 함수에 대한 설명을 추가한다.
+267
+
+=== PDF Page 273 ===
+
+$ git checkout master
+Switched to branch 'master'
+$ vim hello.rb
+$ git diff
+diff --git a/hello.rb b/hello.rb
+index ac51efd..36c06c8 100755
+--- a/hello.rb
++++ b/hello.rb
+@@ -1,5 +1,6 @@
+ #! /usr/bin/env ruby
++# prints out a greeting
+ def hello
+   puts 'hello world'
+ end
+$ git commit -am 'document the function'
+[master bec6336] document the function
+ 1 file changed, 1 insertion(+)
+이때 whitespace 브랜치를 Merge 하면 공백변경 탓에 충돌이 난다.
+$ git merge whitespace
+Auto-merging hello.rb
+CONFLICT (content): Merge conflict in hello.rb
+Automatic merge failed; fix conflicts and then commit the result.
+Merge 취소하기
+Merge 중에 발생한 충돌을 해결하는 방법은 몇 가지가 있다. 첫 번째는 그저 이 상황을 벗어나는 것이다. 예상하고 있던
+일도 아니고 지금 당장 처리할 일도 아니라면 git merge --abort 명령으로 간단히 Merge 하기 전으로 되돌린다.
+$ git status -sb
+## master
+UU hello.rb
+$ git merge --abort
+$ git status -sb
+## master
+git merge --abort 명령은 Merge 하기 전으로 되돌린다. 완전히 뒤로 되돌리지 못하는 유일한 경우는 Merge 전에
+워킹 디렉토리에서 Stash 하지 않았거나 커밋하지 않은 파일이 존재하고 있었을 때뿐이다. 그 외에는 잘 돌아간다.
+268
+
+=== PDF Page 274 ===
+
+어떤 이유로든 Merge를 처음부터 다시 하고 싶다면 git reset --hard HEAD 명령으로 되돌릴 수 있다. 이 명령은
+워킹 디렉토리를 그 시점으로 완전히 되돌려서 저장하지 않은 것은 사라진다는 점에 주의하자.
+공백 무시하기
+공백 때문에 충돌이 날 때도 있다. 단순한 상황이고 실제로 충돌난 파일을 살펴봤을 때 한 쪽의 모든 라인이 지워지고 다른
+쪽에는 추가됐기 때문에 간단하다고 할 수 있다. 기본적으로 Git은 이런 모든 라인이 변경됐다고 인지하여 Merge 할 수
+없다.
+기본 Merge 전략은 공백의 변화는 무시하도록 하는 옵션을 주는 것이다. Merge 할 때 무수한 공백 때문에 문제가 생기면
+그냥 Merge를 취소한 다음 -Xignore-all-space 나 -Xignore-space-change 옵션을 주어 다시 Merge 한다.
+첫 번째 옵션은 모든 공백을 무시하고 두 번째 옵션은 뭉쳐 있는 공백을 하나로 취급한다.
+$ git merge -Xignore-space-change whitespace
+Auto-merging hello.rb
+Merge made by the 'recursive' strategy.
+ hello.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+위 예제는 모든 공백 변경 사항을 무시하면 실제 파일은 충돌 나지 않고 모든 Merge가 잘 실행된다.
+팀원 중 누군가 스페이스를 탭으로 바꾸거나 탭을 스페이스로 바꾸는 짓을 했을 때 이 옵션이 그대를 구원해 준다.
+수동으로 Merge 하기
+Merge 작업할 때 공백 처리 옵션을 사용하면 Git이 꽤 잘해준다. 하지만, Git이 자동으로 해결하지 못하는 때도 있다. 이럴
+때는 외부 도구의 도움을 받아 해결한다. 예를 들어 Git이 자동으로 해결해주지 못하는 상황에 부닥치면 직접 손으로
+해결해야 한다.
+파일을 dos2unix 로 변환하고 Merge 하면 된다. 이걸 Git에서 어떻게 하는지 살펴보자.
+먼저 Merge 충돌 상태에 있다고 치자. 현 시점의 파일과 Merge 할 파일, 공통 조상의 파일이 필요하다. 이 파일들로
+어쨌든 잘 Merge 되도록 수정하고 다시 Merge를 시도해야 한다.
+우선 세 가지 버전의 파일을 얻는 건 쉽다. Git은 세 버전의 모든 파일에 “stages” 숫자를 붙여서 Index에 다 가지고 있다.
+Stage 1는 공통 조상 파일, Stage 2는 현재 개발자의 버전에 해당하는 파일, Stage 3은 MERGE_HEAD 가 가리키는
+커밋의 파일이다.
+git show 명령으로 각 버전의 파일을 꺼낼 수 있다.
+$ git show :1:hello.rb > hello.common.rb
+$ git show :2:hello.rb > hello.ours.rb
+$ git show :3:hello.rb > hello.theirs.rb
+좀 더 저수준으로 파고들자면 ls-files -u 명령을 사용한다. 이 명령은 Plumbing 명령으로 각 파일을 나타내는 Git
+Blob의 SHA-1를 얻을 수 있다.
+269
+
+=== PDF Page 275 ===
+
+$ git ls-files -u
+100755 ac51efdc3df4f4fd328d1a02ad05331d8e2c9111 1   hello.rb
+100755 36c06c8752c78d2aff89571132f3bf7841a7b5c3 2   hello.rb
+100755 e85207e04dfdd5eb0a1e9febbc67fd837c44a1cd 3   hello.rb
+:1:hello.rb 는 그냥 Blob SHA-1를 지칭하는 줄임말이다.
+이제 워킹 디렉토리에 세 버전의 파일을 모두 가져왔다. 공백 문제를 수동으로 고친 다음에 다시 Merge 한다. Merge 할
+때는 'git merge-file' 명령을 이용한다.
+$ dos2unix hello.theirs.rb
+dos2unix: converting file hello.theirs.rb to Unix format ...
+$ git merge-file -p \
+    hello.ours.rb hello.common.rb hello.theirs.rb > hello.rb
+$ git diff -b
+diff --cc hello.rb
+index 36c06c8,e85207e..0000000
+--- a/hello.rb
++++ b/hello.rb
+@@@ -1,8 -1,7 +1,8 @@@
+  #! /usr/bin/env ruby
+ +# prints out a greeting
+  def hello
+-   puts 'hello world'
++   puts 'hello mundo'
+  end
+  hello()
+이렇게 해서 멋지게 Merge가 완료된 파일을 얻었다. 사실 이것이 ignore-all-space 옵션을 사용하는 것보다 더 나은
+방법이다. 왜냐면 공백을 무시하지 않고 실제로 고쳤기 때문이다. ignore-all-space 옵션을 사용한 Merge 에서는
+여전히 DOS의 개행 문자가 남아서 한 파일에 두 형식의 개행문자가 뒤섞인다.
+Merge 커밋을 완료하기 전에 양쪽 부모에 대해서 무엇이 바뀌었는지 확인하려면 git diff 를 사용한다. 이 명령을
+이용하면 Merge 의 결과로 워킹 디렉토리에 무엇이 바뀌었는지 알 수 있다. 한번 자세히 살펴보자.
+Merge 후의 결과를 Merge 하기 전의 브랜치와 비교하려면, 다시 말해 무엇이 합쳐졌는지 알려면 git diff --ours
+명령을 실행한다.
+270
+
+=== PDF Page 276 ===
+
+$ git diff --ours
+* Unmerged path hello.rb
+diff --git a/hello.rb b/hello.rb
+index 36c06c8..44d0a25 100755
+--- a/hello.rb
++++ b/hello.rb
+@@ -2,7 +2,7 @@
+ # prints out a greeting
+ def hello
+-  puts 'hello world'
++  puts 'hello mundo'
+ end
+ hello()
+위의 결과에서 Merge를 했을 때 현재 브랜치에서는 무엇을 추가했는지를 알 수 있다.
+Merge 할 파일을 가져온 쪽과 비교해서 무엇이 바뀌었는지 보려면 git diff --theirs 를 실행한다. 아래
+예제에서는 공백을 빼고 비교하기 위해 -b 옵션을 같이 써주었다.
+$ git diff --theirs -b
+* Unmerged path hello.rb
+diff --git a/hello.rb b/hello.rb
+index e85207e..44d0a25 100755
+--- a/hello.rb
++++ b/hello.rb
+@@ -1,5 +1,6 @@
+ #! /usr/bin/env ruby
++# prints out a greeting
+ def hello
+   puts 'hello mundo'
+ end
+마지막으로 git diff --base 를 사용해서 양쪽 모두와 비교하여 바뀐 점을 알아본다.
+271
+
+=== PDF Page 277 ===
+
+$ git diff --base -b
+* Unmerged path hello.rb
+diff --git a/hello.rb b/hello.rb
+index ac51efd..44d0a25 100755
+--- a/hello.rb
++++ b/hello.rb
+@@ -1,7 +1,8 @@
+ #! /usr/bin/env ruby
++# prints out a greeting
+ def hello
+-  puts 'hello world'
++  puts 'hello mundo'
+ end
+ hello()
+수동 Merge를 위해서 만들었던 각종 파일은 이제 필요 없으니 git clean 명령을 실행해서 지워준다.
+$ git clean -f
+Removing hello.common.rb
+Removing hello.ours.rb
+Removing hello.theirs.rb
+충돌 파일 Checkout
+앞서 살펴본 여러가지 방법으로 충돌을 해결했지만 바라던 결과가 아닐 수도 있고 심지어 결과가 잘 동작하지 않아 충돌을
+직접 수동으로 더 많은 정보를 살펴보며 해결해야 하는 경우도 있다.
+예제를 조금 바꿔보자. 이번 예제에서는 긴 호흡의 브랜치 두 개가 있다. 각 브랜치에는 몇 개의 커밋이 있는데 양쪽은
+Merge 할 때 반드시 충돌이 날 만한 내용이 들어 있다.
+$ git log --graph --oneline --decorate --all
+* f1270f7 (HEAD, master) update README
+* 9af9d3b add a README
+* 694971d update phrase to hola world
+| * e3eb223 (mundo) add more tests
+| * 7cff591 add testing script
+| * c3ffff1 changed text to hello mundo
+|/
+* b7dcc89 initial hello world code
+master 에만 있는 세 개의 커밋과 mundo 브랜치에만 존재하는 또 다른 세 개의 커밋이 있다. master 브랜치에서
+mundo 브랜치를 Merge 하면 충돌이 난다.
+272
+
+=== PDF Page 278 ===
+
+$ git merge mundo
+Auto-merging hello.rb
+CONFLICT (content): Merge conflict in hello.rb
+Automatic merge failed; fix conflicts and then commit the result.
+해당 파일을 열어서 충돌이 발생한 내용을 보면 아래와 같다.
+#! /usr/bin/env ruby
+def hello
+<<<<<<< HEAD
+  puts 'hola world'
+=======
+  puts 'hello mundo'
+>>>>>>> mundo
+end
+hello()
+양쪽 브랜치에서 추가된 부분이 이 파일에 다 적용됐다. 적용한 커밋 중 파일의 같은 부분을 수정해서 위와 같은 충돌이
+생긴다.
+충돌을 해결하는 몇 가지 도구에 대해 알아보자. 어쩌면 이 충돌을 어떻게 해결해야 하는지 명확하지 않을 수도 있다.
+맥락을 좀 더 살펴봐야 하는 상황 말이다.
+git checkout 명령에 --conflict 옵션을 붙여 사용하는 게 좋은 방법이 될 수 있다. 이 명령은 파일을 다시
+Checkout 받아서 충돌 표시된 부분을 교체한다. 충돌 난 부분은 원래의 코드로 되돌리고 다시 고쳐보려고 할 때 알맞은
+도구다.
+--conflict 옵션에는 diff3`나 `merge 를 넘길 수 있고 merge 가 기본 값이다. --conflict 옵션에 diff3 를
+사용하면 Git은 약간 다른 모양의 충돌 표시를 남긴다. “ours” 나 “theirs” 말고도 “base” 버전의 내용까지 제공한다.
+$ git checkout --conflict=diff3 hello.rb
+위 명령을 실행하면 아래와 같은 결과가 나타난다.
+273
+
+=== PDF Page 279 ===
+
+#! /usr/bin/env ruby
+def hello
+<<<<<<< ours
+  puts 'hola world'
+||||||| base
+  puts 'hello world'
+=======
+  puts 'hello mundo'
+>>>>>>> theirs
+end
+hello()
+이런 형태의 충돌 표시를 계속 보고 싶다면 기본으로 사용하도록 merge.conflictstyle 설정 값을 diff3 로
+설정한다.
+$ git config --global merge.conflictstyle diff3
+git checkout 명령도 --ours 와 --theirs 옵션을 지원한다. 이 옵션은 Merge 하지 않고 둘 중 한쪽만을 선택할 때
+사용한다.
+이 옵션은 바이너리 파일이 충돌 나서 한쪽을 선택해야 하는 상황이나 한쪽 브랜치의 온전한 파일을 원할 때 사용할 수
+있다. 일단 Merge 하고 나서 특정 파일만 Checkout 한 후에 커밋하는 방법도 있다.
+Merge 로그
+git log 명령은 충돌을 해결할 때도 도움이 된다. 로그에는 충돌을 해결할 때 도움이 될만한 정보가 있을 수 있다. 과거를
+살짝 들춰보면 개발 당시에 같은 곳을 고쳐야만 했던 이유를 밝혀내는 데 도움이 된다.
+“Triple Dot” 문법을 이용하면 Merge 에 사용한 양 브랜치의 모든 커밋의 목록을 얻을 수 있다. 자세한 문법은 Triple
+Dot를 참고한다.
+$ git log --oneline --left-right HEAD...MERGE_HEAD
+< f1270f7 update README
+< 9af9d3b add a README
+< 694971d update phrase to hola world
+> e3eb223 add more tests
+> 7cff591 add testing script
+> c3ffff1 changed text to hello mundo
+위와 같이 총 6개의 커밋을 볼 수 있다. 커밋이 어떤 브랜치에서 온 것인지 보여준다.
+맥락에 따라 필요한 결과만 추려 볼 수도 있다. git log 명령에 --merge 옵션을 추가하면 충돌이 발생한 파일이 속한
+커밋만 보여준다.
+274
+
+=== PDF Page 280 ===
+
+$ git log --oneline --left-right --merge
+< 694971d update phrase to hola world
+> c3ffff1 changed text to hello mundo
+--merge 대신 -p 를 사용하면 충돌 난 파일의 변경사항만 볼 수 있다. 이건 왜 충돌이 났는지 또 이를 해결하기 위해
+어떻게 해야 하는지 이해하는 데 진짜로 유용하다.
+Combined Diff 형식
+Merge가 성공적으로 끝난 파일은 Staging Area에 올려놓았다. 이 상태에서 충돌 난 파일들이 그대로 있을 때 git diff
+명령을 실행하면 충돌 난 파일이 무엇인지 알 수 있다. 어떤 걸 더 고쳐야 하는지 아는 데에 도움이 된다.
+Merge 하다가 충돌이 났을 때 git diff 명령을 실행하면 꽤 생소한 Diff 결과를 보여준다.
+$ git diff
+diff --cc hello.rb
+index 0399cd5,59727f0..0000000
+--- a/hello.rb
++++ b/hello.rb
+@@@ -1,7 -1,7 +1,11 @@@
+  #! /usr/bin/env ruby
+  def hello
+++<<<<<<< HEAD
+ +  puts 'hola world'
+++=======
++   puts 'hello mundo'
+++>>>>>>> mundo
+  end
+  hello()
+이런 형식을 “Combined Diff” 라고 한다. 각 라인은 두 개의 컬럼으로 구분할 수 있다. 첫 번째 컬럼은 “ours” 브랜치와
+워킹 디렉토리의 차이(추가 또는 삭제)를 보여준다. 두 번째 컬럼은 “theirs” 와 워킹 디렉토리사이의 차이를 나타낸다.
+이 예제에서 <<<<<<< 와 >>>>>>> 충돌 마커 표시는 어떤 쪽에도 존재하지 않고 추가된 코드라는 것을 알 수 있다. 이
+표시는 Merge 도구가 만들어낸 코드이기 때문이다. 물론 이 표시는 지워야 하는 라인이다.
+충돌을 다 해결하고 git diff 명령을 다시 실행하면 아래와 같이 보여준다. 이 결과도 유용하다.
+275
+
+=== PDF Page 281 ===
+
+$ vim hello.rb
+$ git diff
+diff --cc hello.rb
+index 0399cd5,59727f0..0000000
+--- a/hello.rb
++++ b/hello.rb
+@@@ -1,7 -1,7 +1,7 @@@
+  #! /usr/bin/env ruby
+  def hello
+-   puts 'hola world'
+ -  puts 'hello mundo'
+++  puts 'hola mundo'
+  end
+  hello()
+이 결과는 세 가지 사실을 보여준다. “hola world” 는 Our 브랜치에 있었지만 워킹 디렉토리에는 없다. “hello mundo”
+는 Their 브랜치에 있었지만 워킹 디렉토리에는 없다. “hola mundo” 는 어느 쪽 브랜치에도 없고 워킹 디렉토리에는
+있다. 충돌을 해결하고 마지막으로 확인하고 나서 커밋하는 데 유용하다.
+이 정보를 git log 명령을 통해서도 얻을 수 있다. Merge 후에 무엇이 어떻게 바뀌었는지 알아야 할 때 유용하다.
+Merge 커밋에 대해서 git show 명령을 실행하거나 git log -p 에 --cc 옵션을 추가해도 같은 결과를 얻을 수
+있다. git log -p 명령은 기본적으로 Merge 커밋이 아닌 커밋의 Patch를 출력한다.
+276
+
+=== PDF Page 282 ===
+
+$ git log --cc -p -1
+commit 14f41939956d80b9e17bb8721354c33f8d5b5a79
+Merge: f1270f7 e3eb223
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Fri Sep 19 18:14:49 2014 +0200
+    Merge branch 'mundo'
+    Conflicts:
+        hello.rb
+diff --cc hello.rb
+index 0399cd5,59727f0..e1d0799
+--- a/hello.rb
++++ b/hello.rb
+@@@ -1,7 -1,7 +1,7 @@@
+  #! /usr/bin/env ruby
+  def hello
+-   puts 'hola world'
+ -  puts 'hello mundo'
+++  puts 'hola mundo'
+  end
+  hello()
+Merge 되돌리기
+지금까지 Merge 하는 방법을 배웠으나 Merge 할 때 실수할 수도 있다. Git에서는 실수해도 된다. 실수해도 (대부분
+간단하게) 되돌릴 수 있다.
+Merge 커밋도 예외는 아니다. 토픽 브랜치에서 일을 하다가 master 로 잘못 Merge 했다고 생각해보자. 커밋 히스토리는
+아래와 같다.
+277
+
+=== PDF Page 283 ===
+
+그림 138. 우발적인 Merge 커밋.
+접근 방식은 원하는 결과에 따라 두 가지로 나눌 수 있다.
+Refs 수정
+실수로 생긴 Merge 커밋이 로컬 저장소에만 있을 때는 브랜치를 원하는 커밋을 가리키도록 옮기는 것이 쉽고 빠르다. 잘못
+Merge 하고 나서 git reset --hard HEAD~ 명령으로 브랜치를 되돌리면 된다.
+그림 139. git reset --hard HEAD~ 실행 후의 히스토리.
+reset 에 대해서는 이미 앞의 Reset 명확히 알고 가기에서 다뤘었기 때문에 이 내용이 그리 어렵진 않을 것이다.
+간단하게 복습해보자. reset --hard 명령은 아래의 세 단계로 수행한다.
+1. HEAD의 브랜치를 지정한 위치로 옮긴다. 이 경우엔 master 브랜치를 Merge 커밋(C6) 이전으로 되돌린다.
+278
+
+=== PDF Page 284 ===
+
+2. Index를 HEAD의 내용으로 바꾼다.
+3. 워킹 디렉토리를 Index의 내용으로 바꾼다.
+이 방법의 단점은 히스토리를 다시 쓴다는 것이다. 다른 사람들과 공유된 저장소에서 히스토리를 덮어쓰면 문제가 생길 수
+있다. 무슨 문제가 일어나는지 알고 싶다면 Rebase 의 위험성를 참고하자. 간단히 말해 다시 쓰는 커밋이 이미 다른
+사람들과 공유한 커밋이라면 reset 하지 않는 게 좋다. 이 방법은 Merge 하고 나서 다른 커밋을 생성했다면 제대로
+동작하지 않는다. HEAD를 이동시키면 Merge 이후에 만든 커밋을 잃어버린다.
+커밋 되돌리기
+브랜치를 옮기는 것을 할 수 없는 경우는 모든 변경사항을 취소하는 새로운 커밋을 만들 수도 있다. Git에서 이 기능을
+“revert” 라고 부른다. 지금의 경우엔 아래처럼 실행한다.
+$ git revert -m 1 HEAD
+[master b1d8379] Revert "Merge branch 'topic'"
+-m 1 옵션은 부모가 보호되어야 하는 “mainline” 이라는 것을 나타낸다. HEAD 로 Merge를 했을 때(git merge
+topic1) Merge 커밋은 두 개의 부모 커밋을 가진다. 첫 번째 부모 커밋은 HEAD (C6)이고 두 번째 부모 커밋은 Merge
+대상 브랜치(C4)이다. 두 번째 부모 커밋(C4)에서 받아온 모든 변경사항을 되돌리고 첫 번째 부모(C6)로부터 받아온
+변경사항은 남겨두고자 하는 상황이다.
+변경사항을 되돌린 커밋은 히스토리에서 아래와 같이 보인다.
+그림 140. git revert -m 1 실행 후의 히스토리
+새로 만든 커밋 ^M 은 C6 과 내용이 완전히 똑같다. 잘못 Merge 한 커밋까지 HEAD 의 히스토리에서 볼 수 있다는 것
+말고는 Merge 하지 않은 것과 같다. topic 브랜치를 master 브랜치에 다시 Merge 하면 Git은 아래와 같이
+어리둥절해한다.
+$ git merge topic
+Already up-to-date.
+279
+
+=== PDF Page 285 ===
+
+이미 Merge 했던 topic 브랜치에는 더는 master 브랜치로 Merge 할 내용이 없다. 상황을 더 혼란스럽게 하는 경우는
+topic 에서 뭔가 더 일을 하고 다시 Merge를 하는 경우이다. Git은 Merge 이후에 새로 만들어진 커밋만 가져온다.
+그림 141. 좋지 않은 Merge가 있는 히스토리
+이러면 가장 좋은 방법은 되돌렸던 Merge 커밋을 다시 되돌리는 것이다. 이후에 추가한 내용을 새 Merge 커밋으로
+만드는 게 좋다.
+$ git revert ^M
+[master 09f0126] Revert "Revert "Merge branch 'topic'""
+$ git merge topic
+그림 142. 되돌린 Merge를 다시 Merge 한 후의 히스토리
+위 예제에서는 M 과 ^M 이 상쇄됐다. ^^M 는 C3 와 C4 의 변경 사항을 담고 있고 C8 은 C7 의 내용을 훌륭하게 Merge
+했다. 이리하여 현재 topic 브랜치를 완전히 Merge 한 상태가 됐다.
+다른 방식의 Merge
+지금까지 두 브랜치를 평범하게 Merge 하는 방법에 대해 알아보았다. Merge는 보통 “recursive” 전략을 사용한다.
+브랜치를 한 번에 Merge 하는 방법은 여러 가지다. 그 중 몇 개만 간단히 알아보자.
+Our/Their 선택하기
+먼저 일반적인 “recursive” 전략을 사용하는 Merge 작업을 할 때 유용한 옵션을 소개한다. 앞에서 ignore-all-
+280
+
+=== PDF Page 286 ===
+
+space 와 ignore-space-change 기능을 -X 옵션에 붙여 쓰는 것을 보았다. 이 -X 옵션은 충돌이 났을 때 어떤 한
+쪽을 선택할 때도 사용한다.
+아무 옵션도 지정하지 않고 두 브랜치를 Merge 하면 Git은 코드에 충돌 난 곳을 표시하고 해당 파일을 충돌 난 파일로
+표시해준다. 충돌을 직접 해결하는 게 아니라 미리 Git에게 충돌이 났을 때 두 브랜치 중 한쪽을 선택하라고 알려줄 수
+있다. merge 명령을 사용할 때 -Xours 나 Xtheirs 옵션을 추가하면 된다.
+Git에 이 옵션을 주면 충돌 표시가 남지 않는다. Merge가 가능하면 Merge 될 것이고 충돌이 나면 사용자가 명시한 쪽의
+내용으로 대체한다. 바이너리 파일도 똑같다.
+“hello world” 예제로 돌아가서 다시 Merge를 해보자. Merge를 하면 충돌이 나는 것을 볼 수 있다.
+$ git merge mundo
+Auto-merging hello.rb
+CONFLICT (content): Merge conflict in hello.rb
+Resolved 'hello.rb' using previous resolution.
+Automatic merge failed; fix conflicts and then commit the result.
+하지만 -Xours 나 -Xtheirs 옵션을 주면 충돌이 났다는 소리가 없다.
+$ git merge -Xours mundo
+Auto-merging hello.rb
+Merge made by the 'recursive' strategy.
+ hello.rb | 2 +-
+ test.sh  | 2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+ create mode 100644 test.sh
+한쪽 파일에는 “hello mundo” 가 있고 다른 파일에는 “hola world” 가 있다. 이 Merge에서 충돌 표시를 하는 대신
+간단히 “hola world” 를 선택한다. 충돌 나지 않은 나머지는 잘 Merge 된다.
+이 옵션은 git merge-file 명령에도 사용할 수 있다. 앞에서 이미 git merge-file --ours 같이 실행해서
+파일을 따로따로 Merge 했다.
+이런 식의 동작을 원하지만 애초에 Git이 Merge 시도조차 하지 않는 자비 없는 옵션도 있다. “ours” Merge 전략 이다. 이
+전략은 Recursive Merge 전략의 “ours” 옵션 과는 다르다.
+이 작업은 기본적으로 거짓으로 Merge 한다. 그리고 양 브랜치를 부모로 삼는 새 Merge 커밋을 만든다. 하지만, Their
+브랜치는 참고하지 않는다. Our 브랜치의 코드를 그대로 사용하고 Merge 한 것처럼 기록할 뿐이다.
+$ git merge -s ours mundo
+Merge made by the 'ours' strategy.
+$ git diff HEAD HEAD~
+$
+281
+
+=== PDF Page 287 ===
+
+지금 있는 브랜치와 Merge 결과가 다르지 않다는 것을 알 수 있다.
+이 ours 전략을 이용해 이미 Merge가 되었다고 Git을 속이고 실제로는 Merge를 나중에 수행한다. 예를 들어 release
+브랜치을 만들고 여기에도 코드를 추가했다. 언젠가 이것을 master 브랜치에도 Merge 해야 하지만 아직은 하지 않았다.
+그리고 master 브랜치에서 bugfix 브랜치를 만들어 버그를 수정하고 이것을 release 브랜치에도 적용
+(Backport)해야 한다. bugfix 브랜치를 release 브랜치로 Merge 하고 이미 포함된 master 브랜치에도 merge -s
+ours 명령으로 Merge 해 둔다. 이렇게 하면 나중에 release 브랜치를 Merge 할 때 버그 수정에 대한 커밋으로 충돌이
+일어나지 않게끔 할 수 있다.
+서브트리 Merge
+서브트리 Merge 의 개념은 프로젝트 두 개가 있을 때 한 프로젝트를 다른 프로젝트의 하위 디렉토리로 매핑하여 사용하는
+것이다. Merge 전략으로 서브트리(Subtree)를 사용하는 경우 Git은 매우 똑똑하게 서브트리를 찾아서 메인 프로젝트로
+서브프로젝트의 내용을 Merge 한다.
+한 저장소에 완전히 다른 프로젝트의 리모트 저장소를 추가하고 데이터를 가져와서 Merge 까지 하는 과정을 살펴보자.
+먼저 Rack 프로젝트 현재 프로젝트에 추가한다. Rack 프로젝트의 리모트 저장소를 현재 프로젝트의 리모트로 추가하고
+Rack 프로젝트의 브랜치와 히스토리를 가져와(Fetch) 확인한다.
+$ git remote add rack_remote https://github.com/rack/rack
+$ git fetch rack_remote --no-tags
+warning: no common commits
+remote: Counting objects: 3184, done.
+remote: Compressing objects: 100% (1465/1465), done.
+remote: Total 3184 (delta 1952), reused 2770 (delta 1675)
+Receiving objects: 100% (3184/3184), 677.42 KiB | 4 KiB/s, done.
+Resolving deltas: 100% (1952/1952), done.
+From https://github.com/rack/rack
+ * [new branch]      build      -> rack_remote/build
+ * [new branch]      master     -> rack_remote/master
+ * [new branch]      rack-0.4   -> rack_remote/rack-0.4
+ * [new branch]      rack-0.9   -> rack_remote/rack-0.9
+$ git checkout -b rack_branch rack_remote/master
+Branch rack_branch set up to track remote branch
+refs/remotes/rack_remote/master.
+Switched to a new branch "rack_branch"
+(역주 - git fetch rack_remote 명령의 결과에서 warning: no common commits 메시지를 주목해야 한다.)
+Rack 프로젝트의 브랜치인 rack_branch 를 만들었다. 원 프로젝트는 master 브랜치에 있다. checkout 명령으로
+두 브랜치를 이동하면 전혀 다른 두 프로젝트가 한 저장소에 있는 것처럼 보인다.
+282
+
+=== PDF Page 288 ===
+
+$ ls
+AUTHORS         KNOWN-ISSUES   Rakefile      contrib         lib
+COPYING         README         bin           example         test
+$ git checkout master
+Switched to branch "master"
+$ ls
+README
+상당히 요상한 방식으로 Git을 활용한다. 저장소의 브랜치가 꼭 같은 프로젝트가 아닐 수도 있다. Git에서는 전혀 다른
+브랜치를 쉽게 만들 수 있다. 물론 이렇게 사용하는 경우는 드물다.
+Rack 프로젝트를 master 브랜치의 하위 디렉토리로 만들 수 있다. 이는 git read-tree 명령을 사용한다. read-
+tree 명령과 같이 저수준 명령에 관련된 많은 내용은 Git의 내부에서 다룬다. 간단히 말하자면 read-tree 명령은 어떤
+브랜치로부터 루트 트리를 읽어서 현재 Staging Area나 워킹 디렉토리로 가져온다. master 브랜치로 다시 Checkout
+하고 rack_branch 브랜치를 rack 이라는 master 브랜치의 하위 디렉토리로 만들어보자.
+$ git read-tree --prefix=rack/ -u rack_branch
+이제 커밋하면 Rack 프로젝트의 모든 파일이 Tarball 압축파일을 풀어서 소스코드를 포함한 것 같이 커밋에 새로
+추가된다. 이렇게 쉽게 한 브랜치의 내용을 다른 브랜치에 Merge 시킬 수 있다는 점이 흥미롭지 않은가? Rack 프로젝트가
+업데이트되면 Pull 해서 master 브랜치도 적용할 수 있을까?
+$ git checkout rack_branch
+$ git pull
+위의 명령을 실행하고 업데이트된 결과를 master 브랜치로 다시 Merge 한다. Recursive Merge 전략 옵션인
+-Xsubtree 옵션과 --squash 옵션을 함께 사용하면 동일한 커밋 메시지로 업데이트할 수 있다. (Recursive 전략이
+기본 전략이지만 설명을 위해서 사용한다)
+$ git checkout master
+$ git merge --squash -s recursive -Xsubtree=rack rack_branch
+Squash commit -- not updating HEAD
+Automatic merge went well; stopped before committing as requested
+위 명령을 실행하면 Rack 프로젝트에서 변경된 모든 부분이 master 브랜치로 반영되고 커밋할 준비가 완료된다. 반대로
+rack 하위 디렉토리에서 변경한 내용을 rack_branch 로 Merge 하는 것도 가능하다. 변경한 것을 메인테이너에게
+보내거나 Upstream에 Push 한다.
+이런 방식은 서브모듈(서브모듈에서 자세하게 다룬다)을 사용하지 않고 서브모듈을 관리하는 또 다른 워크플로이다. 한
+저장소 안에 다른 프로젝트까지 유지하면서 서브트리 Merge 전략으로 업데이트도 할 수 있다. 프로젝트에 필요한 코드를
+한 저장소에서 관리할 수 있다. 다만, 이렇게 저장소를 관리하는 방법은 저장소를 다루기 좀 복잡하고 통합할 때 실수하기
+쉽다. 엉뚱한 저장소로 Push 해버릴 가능성도 있다.
+283
+
+=== PDF Page 289 ===
+
+diff 명령으로 rack 하위 디렉토리와 rack_branch 의 차이를 볼 때도 이상하다. Merge 하기 전에 두 차이를 보고
+싶어도 diff 명령을 사용할 수 없다. 대신 git diff-tree 명령이 준비돼 있다.
+$ git diff-tree -p rack_branch
+혹은 rack 하위 디렉토리가 Rack 프로젝트의 리모트 저장소의 master 브랜치와 어떤 차이가 있는지 살펴보고 싶을
+수도 있다. 마지막으로 Fetch 한 리모트의 master 브랜치와 비교하려면 아래와 같은 명령을 사용한다.
+$ git diff-tree -p rack_remote/master
+Rerere
+git rerere 기능은 약간 숨겨진 기능이다. “reuse recorded resolution” 이라고 해서 기록한 해결책 재사용하기란
+뜻의 이름이고 이름 그대로 동작한다. Git은 충돌이 났을 때 각 코드 덩어리를 어떻게 해결했는지 기록을 해 두었다가
+나중에 같은 충돌이 나면 기록을 참고하여 자동으로 해결한다.
+이 기능을 사용하면 재미있는 시나리오가 가능하다. 문서에서 드는 예제 중 하나는 긴 호흡의 브랜치를 깔끔하게 Merge
+하고 싶은데 Merge 커밋은 많이 만들고 싶지 않을 때 사용하는 것이다. rerere 기능을 켜고 자주 Merge를 해서 충돌을
+해결하고 Merge 이전으로 돌아간다. 이 과정을 반복해서 기록을 쌓아두면 rerere 기능은 나중에 한 번에 Merge 할 때
+기록을 참고한다. 자동으로 충돌이 날 만한 부분을 다 해결해주시니 몸과 마음이 평안하다.
+브랜치를 Rebase 할 때도 같은 전략을 사용할 수 있다. 쌓인 충돌 해결 기록을 참고하여 Git은 Rebase 할 때 발생한
+충돌도 최대한 해결한다. 충돌 덩어리들을 해결하고 Merge 했는데 다시 Rebase 하기로 마음을 바꿨을 때 같은 충돌을 두
+번 해결할 필요 없다.
+또 다른 상황을 생각해보자. 뭔가를 개선한 토픽 브랜치가 여러 개 있을 때 이것을 테스트 브랜치에 전부 다 Merge 해야
+한다. Git 프로젝트 자체에서 자주 이렇게 한다. 테스트가 실패하면 해당 Merge를 취소하고 테스트가 실패한 토픽
+브랜치만 빼고 다시 Merge한다. 한 번 해결한 충돌은 다시 손으로 해결하지 않아도 된다.
+rerere 기능은 간단히 아래 명령으로 설정하여 활성화한다.
+$ git config --global rerere.enabled true
+저장소에 .git/rr-cache 디렉토리를 만들어 기능을 켤 수도 있다. config 명령을 사용하는 방법이 깔끔하고
+Global로 설정할 수도 있다.
+간단한 예제를 하나 더 살펴보자. 위에서 살펴본 예제와 비슷하다. 아래와 같은 hello.rb 파일 하나가 있다.
+#! /usr/bin/env ruby
+def hello
+  puts 'hello world'
+end
+284
+
+=== PDF Page 290 ===
+
+이전 예제와 마찬가지로 한 브랜치에서는 “hello” 를 “hola” 로 바꿨다. 그리고 다른 브랜치에서는 “world” 를
+“mundo” 로 바꿨다.
+이런 상황에서 이 두 브랜치를 Merge 하면 당연히 충돌이 발생한다.
+$ git merge i18n-world
+Auto-merging hello.rb
+CONFLICT (content): Merge conflict in hello.rb
+Recorded preimage for 'hello.rb'
+Automatic merge failed; fix conflicts and then commit the result.
+Merge 명령을 실행한 결과에 Recorded preimage for FILE 라는 결과를 눈여겨봐야 한다. 저 말이 없으면
+평소처럼 그냥 충돌이 난다. 지금은 rerere 기능 때문에 몇 가지 정보를 더 출력했다. 보통은 git status 명령을
+실행해서 어떤 파일에 충돌이 발생했는지 확인한다.
+$ git status
+# On branch master
+# Unmerged paths:
+#   (use "git reset HEAD <file>..." to unstage)
+#   (use "git add <file>..." to mark resolution)
+#
+#   both modified:      hello.rb
+#
+git rerere status 명령으로 충돌 난 파일을 확인할 수 있다.
+285
+
+=== PDF Page 291 ===
+
+$ git rerere status
+hello.rb
+그리고 git rerere diff 명령으로 해결 중인 상태를 확인할 수 있다. 얼마나 해결했는지 비교해서 보여준다.
+$ git rerere diff
+--- a/hello.rb
++++ b/hello.rb
+@@ -1,11 +1,11 @@
+ #! /usr/bin/env ruby
+ def hello
+-<<<<<<<
+-  puts 'hello mundo'
+-=======
++<<<<<<< HEAD
+   puts 'hola world'
+->>>>>>>
++=======
++  puts 'hello mundo'
++>>>>>>> i18n-world
+ end
+rerere 기능에 포함된 것은 아니지만 git ls-files -u 명령으로 이전/현재/대상 버전의 해시를 확인할 수도 있다.
+$ git ls-files -u
+100644 39804c942a9c1f2c03dc7c5ebcd7f3e3a6b97519 1   hello.rb
+100644 a440db6e8d1fd76ad438a49025a9ad9ce746f581 2   hello.rb
+100644 54336ba847c3758ab604876419607e9443848474 3   hello.rb
+이제는 puts 'hola mundo' 내용으로 충돌을 해결하자. 마지막으로 git rerere diff 명령을 실행하면
+rerere가 기록할 내용을 확인할 수 있다.
+286
+
+=== PDF Page 292 ===
+
+$ git rerere diff
+--- a/hello.rb
++++ b/hello.rb
+@@ -1,11 +1,7 @@
+ #! /usr/bin/env ruby
+ def hello
+-<<<<<<<
+-  puts 'hello mundo'
+-=======
+-  puts 'hola world'
+->>>>>>>
++  puts 'hola mundo'
+ end
+간단하게 말해서 Git은 hello.rb 파일에서 충돌이 발생했을 때 한쪽엔 “hello mundo” 이고 다른 한쪽에는 “hola
+world” 이면 이를 “hola mundo” 로 해결한다.
+이제 이 파일을 해결한 것으로 표시한 다음에 커밋한다.
+$ git add hello.rb
+$ git commit
+Recorded resolution for 'hello.rb'.
+[master 68e16e5] Merge branch 'i18n'
+커밋을 쌓고 나면 "Recorded resolution for FILE" 이라는 메시지를 결과에서 볼 수 있다.
+287
+
+=== PDF Page 293 ===
+
+이제 Merge를 되돌리고 Rebase를 해서 master 브랜치에 쌓아 보자. Reset 명확히 알고 가기에서 살펴본 대로 git
+reset 명령을 사용하여 브랜치가 가리키는 커밋을 되돌린다.
+$ git reset --hard HEAD^
+HEAD is now at ad63f15 i18n the hello
+이렇게 Merge 하기 이전 상태로 돌아왔다. 이제 토픽 브랜치를 Rebase 한다.
+$ git checkout i18n-world
+Switched to branch 'i18n-world'
+$ git rebase master
+First, rewinding head to replay your work on top of it...
+Applying: i18n one word
+Using index info to reconstruct a base tree...
+Falling back to patching base and 3-way merge...
+Auto-merging hello.rb
+CONFLICT (content): Merge conflict in hello.rb
+Resolved 'hello.rb' using previous resolution.
+Failed to merge in the changes.
+Patch failed at 0001 i18n one word
+예상대로 Merge 했을 때와 같은 충돌이 발생한다. 하지만, Rebase를 실행한 결과에 Resolved 'hello.rb' using
+previous resolution 메시지가 있다. 이 파일을 열어보면 이미 충돌이 해결된 것을 볼 수 있다. 파일 어디에도
+충돌이 발생했다는 표시를 찾아볼 수 없다.
+288
+
+=== PDF Page 294 ===
+
+#! /usr/bin/env ruby
+def hello
+  puts 'hola mundo'
+end
+또 git diff 명령을 실행해보면 Git이 자동으로 해결한 결과도 확인할 수 있다.
+$ git diff
+diff --cc hello.rb
+index a440db6,54336ba..0000000
+--- a/hello.rb
++++ b/hello.rb
+@@@ -1,7 -1,7 +1,7 @@@
+  #! /usr/bin/env ruby
+  def hello
+-   puts 'hola world'
+ -  puts 'hello mundo'
+++  puts 'hola mundo'
+  end
+git checkout 명령으로 충돌이 발생한 시점의 상태로 파일 내용을 되돌릴 수도 있다.
+289
+
+=== PDF Page 295 ===
+
+$ git checkout --conflict=merge hello.rb
+$ cat hello.rb
+#! /usr/bin/env ruby
+def hello
+<<<<<<< ours
+  puts 'hola world'
+=======
+  puts 'hello mundo'
+>>>>>>> theirs
+end
+고급 Merge에서 이러한 명령을 사용하는 예제를 보았다. 이때 git rerere 명령을 실행하면 충돌이 발생한 코드를
+자동으로 다시 해결한다.
+$ git rerere
+Resolved 'hello.rb' using previous resolution.
+$ cat hello.rb
+#! /usr/bin/env ruby
+def hello
+  puts 'hola mundo'
+end
+강제로 충돌이 발생한 상황으로 되돌리고 rerere 명령으로 자동으로 충돌을 해결했다. 이제 충돌을 해결한 파일을
+추가하고 Rebase를 완료하기만 하면 된다.
+$ git add hello.rb
+$ git rebase --continue
+Applying: i18n one word
+이처럼 여러 번 Merge 하거나, Merge 커밋을 쌓지 않으면서도 토픽 브랜치를 master 브랜치의 최신 내용으로
+유지하거나, Rebase를 자주 한다면 rerere 기능을 켜두는 게 여러모로 몸과 마음에 도움이 된다.
+Git으로 버그 찾기
+Git에는 버전관리 기능 말고도 프로젝트를 디버깅하기 위해 사용할 좋은 기능도 갖고 있다. Git은 굉장히 유연해서 어떤
+형식의 프로젝트에나 사용할 수 있다. 문제를 일으킨 범인이나 버그를 쉽게 찾을 수 있도록 도와준다.
+파일 어노테이션(Blame)
+버그를 찾을 때 먼저 그 코드가 왜, 언제 추가했는지 알고 싶을 것이다. 이때는 파일 어노테이션을 활용한다. 한 줄 한 줄
+마지막으로 커밋한 사람이 누구인지, 언제 마지막으로 커밋했는지 볼 수 있다. 어떤 메소드에 버그가 있으면 git blame
+명령으로 그 메소드의 각 라인을 누가 언제 마지막으로 고쳤는지 찾아낼 수 있다.
+290
+
+=== PDF Page 296 ===
+
+다음 예제는 git blame 명령을 사용하여 어떤 커밋이나 커밋 저자가 리눅스 커널의 Makefile 각 라인을 수정했는지
+확인해보고자 한다. -L 옵션을 사용하여 전체 파일이 아니라 69 라인부터 82 라인까지 제한하여 부분적으로 확인할 수도
+있다.
+$ git blame -L 69,82 Makefile
+b8b0618cf6fab (Cheng Renquan  2009-05-26 16:03:07 +0800 69) ifeq
+("$(origin V)", "command line")
+b8b0618cf6fab (Cheng Renquan  2009-05-26 16:03:07 +0800 70)
+KBUILD_VERBOSE = $(V)
+^1da177e4c3f4 (Linus Torvalds 2005-04-16 15:20:36 -0700 71) endif
+^1da177e4c3f4 (Linus Torvalds 2005-04-16 15:20:36 -0700 72) ifndef
+KBUILD_VERBOSE
+^1da177e4c3f4 (Linus Torvalds 2005-04-16 15:20:36 -0700 73)
+KBUILD_VERBOSE = 0
+^1da177e4c3f4 (Linus Torvalds 2005-04-16 15:20:36 -0700 74) endif
+^1da177e4c3f4 (Linus Torvalds 2005-04-16 15:20:36 -0700 75)
+066b7ed955808 (Michal Marek   2014-07-04 14:29:30 +0200 76) ifeq
+($(KBUILD_VERBOSE),1)
+066b7ed955808 (Michal Marek   2014-07-04 14:29:30 +0200 77)   quiet =
+066b7ed955808 (Michal Marek   2014-07-04 14:29:30 +0200 78)   Q =
+066b7ed955808 (Michal Marek   2014-07-04 14:29:30 +0200 79) else
+066b7ed955808 (Michal Marek   2014-07-04 14:29:30 +0200 80)   quiet=quiet_
+066b7ed955808 (Michal Marek   2014-07-04 14:29:30 +0200 81)   Q = @
+066b7ed955808 (Michal Marek   2014-07-04 14:29:30 +0200 82) endif
+첫 항목은 그 라인을 마지막으로 수정한 커밋 SHA-1 값이다. 그 다음 두 항목은 누가, 언제 그 라인을 커밋했는지
+보여준다. 그래서 누가, 언제 커밋했는지 쉽게 찾을 수 있다. 그 뒤에 파일의 라인 번호와 내용을 보여준다. 그리고
+^1da177e4c3f4 커밋이 궁금할 텐데 ^ 표시가 붙어 있으면 그 커밋에서 해당 라인이 처음 커밋됐다는 것을 의미한다.
+그러니까 해당 라인들은 처음 커밋한 후 변경된 적이 없다. 지금까지 커밋을 가리킬 때 ^ 기호의 사용법을 적어도 세 가지
+이상 배웠기 때문에 약간 헷갈릴 수 있으니 어노테이션에서의 의미를 혼동하지 말자.
+Git은 파일 이름을 변경한 이력을 별도로 기록해두지 않는다. 하지만, 원래 이 정보들은 각 스냅샷에 저장되고 이 정보를
+이용하여 변경 이력을 만들어 낼 수 있다. 그러니까 파일에 생긴 변화는 무엇이든지 알아낼 수 있다. Git은 파일
+어노테이션을 분석하여 코드들이 원래 어떤 파일에서 커밋된 것인지 찾아준다. 예를 들어 GITServerHandler.m 을
+여러 개의 파일로 리팩토링했는데 그 중 한 파일이 GITPackUpload.m 이라는 파일이었다. 이 경우 -C 옵션으로
+GITPackUpload.m 파일을 추적해서 각 코드가 원래 어떤 파일로 커밋된 것인지 알 수 있었다.
+291
+
+=== PDF Page 297 ===
+
+$ git blame -C -L 141,153 GITPackUpload.m
+f344f58d GITServerHandler.m (Scott 2009-01-04 141)
+f344f58d GITServerHandler.m (Scott 2009-01-04 142) - (void)
+gatherObjectShasFromC
+f344f58d GITServerHandler.m (Scott 2009-01-04 143) {
+70befddd GITServerHandler.m (Scott 2009-03-22 144)
+//NSLog(@"GATHER COMMI
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 145)
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 146)         NSString
+*parentSha;
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 147)         GITCommit
+*commit = [g
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 148)
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 149)
+//NSLog(@"GATHER COMMI
+ad11ac80 GITPackUpload.m    (Scott 2009-03-24 150)
+56ef2caf GITServerHandler.m (Scott 2009-01-05 151)         if(commit) {
+56ef2caf GITServerHandler.m (Scott 2009-01-05 152)
+[refDict setOb
+56ef2caf GITServerHandler.m (Scott 2009-01-05 153)
+언제나 코드가 커밋될 당시의 파일이름을 알 수 있기 때문에 코드를 어떻게 리팩토링해도 추적할 수 있다. 그리고 어떤
+파일에 적용해봐도 각 라인을 커밋할 당시의 파일이름을 알 수 있다. 버그를 찾을 때 정말 유용하다.
+이진 탐색
+파일 어노테이션은 특정 이슈와 관련된 커밋을 찾는 데에도 좋다. 문제가 생겼을 때 의심스러운 커밋이 수십, 수백 개에
+이르는 경우 도대체 어디서부터 시작해야 할지 모를 수 있다. 이때는 git bisect 명령이 유용하다. bisect 명령은
+커밋 히스토리를 이진 탐색 방법으로 좁혀 주기 때문에 이슈와 관련된 커밋을 최대한 빠르게 찾아낼 수 있도록 도와준다.
+코드를 운용 환경에 배포하고 난 후에 개발할 때 발견하지 못한 버그가 있다고 보고받았다. 그런데 왜 그런 현상이
+발생하는지 아직 이해하지 못하는 상황을 가정해보자. 해당 이슈를 다시 만들고 작업하기 시작했는데 뭐가 잘못됐는지
+알아낼 수 없다. 이럴 때 bisect 명령을 사용하여 코드를 뒤져 보는 게 좋다. 먼저 git bisect start 명령으로 이진
+탐색을 시작하고 git bisect bad 를 실행하여 현재 커밋에 문제가 있다고 표시를 남기고 나서 문제가 없는 마지막
+커밋을 git bisect good <good_commit> 명령으로 표시한다.
+$ git bisect start
+$ git bisect bad
+$ git bisect good v1.0
+Bisecting: 6 revisions left to test after this
+[ecb6e1bc347ccecc5f9350d878ce677feb13d3b2] error handling on repo
+이 예제에서 마지막으로 괜찮았던 커밋(v1.0)과 현재 문제가 있는 커밋 사이에 있는 커밋은 전부 12개이고 Git은 그
+중간에 있는 커밋을 Checkout 해준다. 여기에서 해당 이슈가 구현됐는지 테스트해보고 만약 이슈가 있으면 그 중간 커밋
+이전으로 범위를 좁히고 이슈가 없으면 그 중간 커밋 이후로 범위를 좁힌다. 이슈를 발견하지 못하면 git bisect
+292
+
+=== PDF Page 298 ===
+
+good 으로 이슈가 아직 없음을 알리고 계속 진행한다.
+$ git bisect good
+Bisecting: 3 revisions left to test after this
+[b047b02ea83310a70fd603dc8cd7a6cd13d15c04] secure this thing
+현재 문제가 있는 커밋과 지금 테스트한 커밋 사이에서 중간에 있는 커밋이 Checkout 됐다. 다시 테스트해보고 이슈가
+있으면 git bisect bad 로 이슈가 있다고 알린다.
+$ git bisect bad
+Bisecting: 1 revisions left to test after this
+[f71ce38690acf49c1f3c9bea38e09d82a5ce6014] drop exceptions table
+이제 이슈를 처음 구현한 커밋을 찾았다. 이 SHA-1 값을 포함한 이 커밋의 정보를 확인하고 수정된 파일이 무엇인지
+확인할 수 있다. 이 문제가 발생한 시점에 도대체 무슨 일이 있었는지 아래와 같이 살펴본다.
+$ git bisect good
+b047b02ea83310a70fd603dc8cd7a6cd13d15c04 is first bad commit
+commit b047b02ea83310a70fd603dc8cd7a6cd13d15c04
+Author: PJ Hyett <pjhyett@example.com>
+Date:   Tue Jan 27 14:48:32 2009 -0800
+    secure this thing
+:040000 040000 40ee3e7821b895e52c1695092db9bdc4c61d1730
+f24d3c6ebcfc639b1a3814550e62d60b8e68a8e4 M  config
+이제 찾았으니까 git bisect reset 명령을 실행시켜서 이진 탐색을 시작하기 전으로 HEAD를 돌려놓는다.
+$ git bisect reset
+수백 개의 커밋들 중에서 버그가 만들어진 커밋을 찾는 데 몇 분밖에 걸리지 않는다. 프로젝트가 정상적으로 수행되면 0을
+반환하고 문제가 있으면 1을 반환하는 스크립트를 만든다면, 이 git bisect 과정을 완전히 자동으로 수행할 수 있다.
+먼저 bisect start 명령으로 이진 탐색에 사용할 범위를 알려준다. 위에서 한 것처럼 문제가 있다고 아는 커밋과
+문제가 없다고 아는 커밋을 넘기면 된다.
+$ git bisect start HEAD v1.0
+$ git bisect run test-error.sh
+문제가 생긴 첫 커밋을 찾을 때까지 Checkout 할 때마다 test-error.sh 를 실행한다. make 가 됐든지 make
+tests 가 됐든지 어쨌든 이슈를 찾는 테스트를 실행하여 찾는다.
+293
+
+=== PDF Page 299 ===
+
+서브모듈
+프로젝트를 수행하다 보면 다른 프로젝트를 함께 사용해야 하는 경우가 종종 있다. 함께 사용할 다른 프로젝트는 외부에서
+개발한 라이브러리라던가 내부 여러 프로젝트에서 공통으로 사용할 라이브러리일 수 있다. 이런 상황에서 자주 생기는
+이슈는 두 프로젝트를 서로 별개로 다루면서도 그 중 하나를 다른 하나 안에서 사용할 수 있어야 한다는 것이다.
+Atom 피드를 제공하는 웹사이트를 만드는 것을 예로 들어보자. Atom 피드를 생성하는 코드는 직접 작성하지 않고
+라이브러리를 가져다 쓰기로 한다. 라이브러리를 사용하려면 CPAN이나 Ruby gem 같은 라이브러리 관리 도구를
+사용하여 Shared 라이브러리 형태로 쓰거나 직접 라이브러리의 소스코드를 프로젝트로 복사해서 사용할 수 있다. 우선
+Shared 라이브러리를 사용하기에는 문제가 있다. 프로젝트를 사용하는 모든 환경에 라이브러리가 설치되어 있어야 하고
+라이브러리를 프로젝트에 맞게 약간 수정해서 사용하고 배포하기가 어렵다. 또한, 라이브러리 소스코드를 직접
+프로젝트에 포함시키는 경우에는 라이브러리 Upstream 코드가 업데이트됐을 때 Merge 하기가 어렵다.
+Git의 서브모듈은 이런 문제를 다루는 도구다. Git 저장소 안에 다른 Git 저장소를 디렉토리로 분리해 넣는 것이
+서브모듈이다. 다른 독립된 Git 저장소를 Clone 해서 내 Git 저장소 안에 포함할 수 있으며 각 저장소의 커밋은 독립적으로
+관리한다.
+서브모듈 시작하기
+예제로 하위 프로젝트 여러 개를 가지는 프로젝트를 하나 만들어 서브모듈의 기능을 살펴보자.
+작업할 Git 저장소에 미리 준비된 리모트 Git 저장소를 서브모듈로 추가해보자. 서브모듈을 추가하는 명령으로 git
+submodule add 뒤에 추가할 저장소의 URL을 붙여준다. 이 URL은 절대경로도 되고 상대경로도 된다. 예제로
+“DbConnector” 라는 라이브러리를 추가한다.
+$ git submodule add https://github.com/chaconinc/DbConnector
+Cloning into 'DbConnector'...
+remote: Counting objects: 11, done.
+remote: Compressing objects: 100% (10/10), done.
+remote: Total 11 (delta 0), reused 11 (delta 0)
+Unpacking objects: 100% (11/11), done.
+Checking connectivity... done.
+기본적으로 서브모듈은 프로젝트 저장소의 이름으로 디렉토리를 만든다. 예제에서는 “DbConnector” 라는 이름으로
+만든다. 명령의 마지막에 원하는 이름을 넣어 다른 디렉토리 이름으로 서브모듈을 추가할 수도 있다.
+서브모듈을 추가하고 난 후 git status 명령을 실행하면 몇 가지 정보를 알 수 있다.
+294
+
+=== PDF Page 300 ===
+
+$ git status
+On branch master
+Your branch is up-to-date with 'origin/master'.
+Changes to be committed:
+  (use "git reset HEAD <file>..." to unstage)
+    new file:   .gitmodules
+    new file:   DbConnector
+우선 .gitmodules 파일이 만들어졌다. 이 파일은 서브디렉토리와 하위 프로젝트 URL의 매핑 정보를 담은
+설정파일이다.
+[submodule "DbConnector"]
+    path = DbConnector
+    url = https://github.com/chaconinc/DbConnector
+서브모듈 개수만큼 이 항목이 생긴다. 이 파일도 .gitignore 파일처럼 버전을 관리한다. 다른 파일처럼 Push 하고 Pull
+한다. 이 프로젝트를 Clone 하는 사람은 .gitmodules 파일을 보고 어떤 서브모듈 프로젝트가 있는지 알 수 있다.
+
+gitmodules 파일에 있는 URL은 조건에 맞는 사람이면 누구든지 Clone 하고 Fetch 할 수 있도록
+접근할 수 있어야 한다.
+예를 들어 다른 사람이 Pull을 하는 URL과 라이브러리의 작업을 Push 하는 URL이 서로 다른
+상황이라면 Pull URL이 모든 사람에게 접근 가능한 URL이어야 한다. 이러면 서브모듈 URL 설정을
+덮어쓰기 해서 사용할 수 있는데 git config submodule.DbConnector.url
+PRIVATE_URL 명령으로 다른 사람과는 다른 서브모듈 URL을 사용할 수 있다. URL을 상대경로로
+적을 수 있으면 상대경로를 사용하는 것이 낫다.
+.gitmodules 은 살펴봤고 이제 프로젝트 폴더에 대해 살펴보자. git diff 명령을 실행시키면 흥미로운 점을 발견할
+수 있다.
+$ git diff --cached DbConnector
+diff --git a/DbConnector b/DbConnector
+new file mode 160000
+index 0000000..c3f01dc
+--- /dev/null
++++ b/DbConnector
+@@ -0,0 +1 @@
++Subproject commit c3f01dc8862123d317dd46284b05b6892c7b29bc
+Git은 DbConnector 디렉토리를 서브모듈로 취급하기 때문에 해당 디렉토리 아래의 파일 수정사항을 직접 추적하지
+않는다. 대신 서브모듈 디렉토리를 통째로 특별한 커밋으로 취급한다.
+git diff 에 --submodule 옵션을 더하면 서브모듈에 대해 더 자세히 나온다.
+295
+
+=== PDF Page 301 ===
+
+$ git diff --cached --submodule
+diff --git a/.gitmodules b/.gitmodules
+new file mode 100644
+index 0000000..71fc376
+--- /dev/null
++++ b/.gitmodules
+@@ -0,0 +1,3 @@
++[submodule "DbConnector"]
++       path = DbConnector
++       url = https://github.com/chaconinc/DbConnector
+Submodule DbConnector 0000000...c3f01dc (new submodule)
+이제 하위 프로젝트를 포함한 커밋을 생성하면 아래와 같은 결과를 확인할 수 있다.
+$ git commit -am 'added DbConnector module'
+[master fb9093c] added DbConnector module
+ 2 files changed, 4 insertions(+)
+ create mode 100644 .gitmodules
+ create mode 160000 DbConnector
+DbConnector 디렉토리의 모드는 `160000`이다. Git에게 있어 160000 모드는 일반적인 파일이나 디렉토리가 아니라
+특별하다는 의미다.
+끝으로, Push 한다.
+$ git push origin master
+서브모듈 포함한 프로젝트 Clone
+서브모듈을 포함하는 프로젝트를 Clone 하는 예제를 살펴본다. 이런 프로젝트를 Clone 하면 기본적으로 서브모듈
+디렉토리는 빈 디렉토리이다.
+296
+
+=== PDF Page 302 ===
+
+$ git clone https://github.com/chaconinc/MainProject
+Cloning into 'MainProject'...
+remote: Counting objects: 14, done.
+remote: Compressing objects: 100% (13/13), done.
+remote: Total 14 (delta 1), reused 13 (delta 0)
+Unpacking objects: 100% (14/14), done.
+Checking connectivity... done.
+$ cd MainProject
+$ ls -la
+total 16
+drwxr-xr-x   9 schacon  staff  306 Sep 17 15:21 .
+drwxr-xr-x   7 schacon  staff  238 Sep 17 15:21 ..
+drwxr-xr-x  13 schacon  staff  442 Sep 17 15:21 .git
+-rw-r--r--   1 schacon  staff   92 Sep 17 15:21 .gitmodules
+drwxr-xr-x   2 schacon  staff   68 Sep 17 15:21 DbConnector
+-rw-r--r--   1 schacon  staff  756 Sep 17 15:21 Makefile
+drwxr-xr-x   3 schacon  staff  102 Sep 17 15:21 includes
+drwxr-xr-x   4 schacon  staff  136 Sep 17 15:21 scripts
+drwxr-xr-x   4 schacon  staff  136 Sep 17 15:21 src
+$ cd DbConnector/
+$ ls
+$
+분명히 DbConnector 디렉토리는 있지만 비어 있다. 서브모듈에 관련된 두 명령을 실행해야 완전히 Clone 과정이
+끝난다. 먼저 git submodule init 명령을 실행하면 서브모듈 정보를 기반으로 로컬 환경설정 파일이 준비된다. 이후
+git submodule update 명령으로 서브모듈의 리모트 저장소에서 데이터를 가져오고 서브모듈을 포함한 프로젝트의
+현재 스냅샷에서 Checkout 해야 할 커밋 정보를 가져와서 서브모듈 프로젝트에 대한 Checkout을 한다.
+$ git submodule init
+Submodule 'DbConnector' (https://github.com/chaconinc/DbConnector)
+registered for path 'DbConnector'
+$ git submodule update
+Cloning into 'DbConnector'...
+remote: Counting objects: 11, done.
+remote: Compressing objects: 100% (10/10), done.
+remote: Total 11 (delta 0), reused 11 (delta 0)
+Unpacking objects: 100% (11/11), done.
+Checking connectivity... done.
+Submodule path 'DbConnector': checked out
+'c3f01dc8862123d317dd46284b05b6892c7b29bc'
+DbConnector 디렉토리는 마지막으로 커밋을 했던 상태로 복원된다.
+하지만, 같은 과정을 더 간단하게 실행하는 방법도 있다. 메인 프로젝트를 Clone 할 때 git clone 명령 뒤에
+--recurse-submodules 옵션을 붙이면 서브모듈을 자동으로 초기화하고 업데이트한다.
+297
+
+=== PDF Page 303 ===
+
+$ git clone --recurse-submodules https://github.com/chaconinc/MainProject
+Cloning into 'MainProject'...
+remote: Counting objects: 14, done.
+remote: Compressing objects: 100% (13/13), done.
+remote: Total 14 (delta 1), reused 13 (delta 0)
+Unpacking objects: 100% (14/14), done.
+Checking connectivity... done.
+Submodule 'DbConnector' (https://github.com/chaconinc/DbConnector)
+registered for path 'DbConnector'
+Cloning into 'DbConnector'...
+remote: Counting objects: 11, done.
+remote: Compressing objects: 100% (10/10), done.
+remote: Total 11 (delta 0), reused 11 (delta 0)
+Unpacking objects: 100% (11/11), done.
+Checking connectivity... done.
+Submodule path 'DbConnector': checked out
+'c3f01dc8862123d317dd46284b05b6892c7b29bc'
+서브모듈 포함한 프로젝트 작업
+이제 프로젝트에 포함된 서브모듈의 저장소 데이터와 코드도 다 받아왔다. 메인 프로젝트와 서브모듈 프로젝트를 오가며
+팀원과 협업할 준비가 되었다.
+서브모듈 업데이트하기
+가장 단순한 서브모듈 사용 방법은 하위 프로젝트를 수정하지 않고 참조만 하면서 최신 버전으로 업데이트하는 것이다.
+간단한 예제로 이 경우를 살펴본다.
+서브모듈 프로젝트를 최신으로 업데이트하려면 서브모듈 디렉토리에서 git fetch 명령을 실행하고 git merge
+명령으로 Upstream 브랜치를 Merge한다.
+$ git fetch
+From https://github.com/chaconinc/DbConnector
+   c3f01dc..d0354fc  master     -> origin/master
+$ git merge origin/master
+Updating c3f01dc..d0354fc
+Fast-forward
+ scripts/connect.sh | 1 +
+ src/db.c           | 1 +
+ 2 files changed, 2 insertions(+)
+메인 프로젝트로 돌아와서 git diff --submodule 명령을 실행하면 업데이트된 서브모듈과 각 서브모듈에 추가된
+커밋을 볼 수 있다. 매번 --submodule 옵션을 쓰고 싶지 않다면 diff.submodule 의 값을 “log” 로 설정하면 된다.
+298
+
+=== PDF Page 304 ===
+
+$ git config --global diff.submodule log
+$ git diff
+Submodule DbConnector c3f01dc..d0354fc:
+  > more efficient db routine
+  > better connection routine
+여기서 커밋하면 서브모듈은 업데이트된 내용으로 메인 프로젝트에 적용된다. 다른 사람들이 업데이트하면 적용된다.
+서브모듈을 최신으로 업데이트하는 더 쉬운 방법도 있다. 서브모듈 디렉토리에서 Fetch 명령과 Merge 명령을 실행하지
+않아도 git submodule update --remote 명령을 실행하면 Git이 알아서 서브모듈 프로젝트를 Fetch 하고
+업데이트한다.
+$ git submodule update --remote DbConnector
+remote: Counting objects: 4, done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 4 (delta 2), reused 4 (delta 2)
+Unpacking objects: 100% (4/4), done.
+From https://github.com/chaconinc/DbConnector
+   3f19983..d0354fc  master     -> origin/master
+Submodule path 'DbConnector': checked out
+'d0354fc054692d3906c85c3af05ddce39a1c0644'
+이 명령은 기본적으로 서브모듈 저장소의 master 브랜치를 Checkout 하고 업데이트를 수행한다. 업데이트할 대상
+브랜치를 원하는 브랜치로 바꿀 수 있다. 예를 들어 DbConnector 서브모듈 저장소에서 업데이트할 대상 브랜치를
+“stable” 로 바꾸고 싶다면 .gitmodules 파일에 설정하거나(이 파일을 공유하는 모두에게 “stable” 브랜치가 적용됨)
+개인 설정 파일인 .git/config 파일에 설정한다. .gitmodules 파일에 설정하는 방법을 알아보자.
+$ git config -f .gitmodules submodule.DbConnector.branch stable
+$ git submodule update --remote
+remote: Counting objects: 4, done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 4 (delta 2), reused 4 (delta 2)
+Unpacking objects: 100% (4/4), done.
+From https://github.com/chaconinc/DbConnector
+   27cf5d3..c87d55d  stable -> origin/stable
+Submodule path 'DbConnector': checked out
+'c87d55d4c6d4b05ee34fbc8cb6f7bf4585ae6687'
+-f .gitmodules 옵션을 포함하지 않으면 이 설정은 공유하지 않고 사용자에게만 적용된다. 다른 사람과 공유하는
+저장소라면 같은 브랜치를 추적하도록 설정하는 것이 더 낫다.
+이제 git status 명령를 실행하면 새로 업데이트한 서브모듈에 “new commits” 가 있다는 걸 알 수 있다.
+299
+
+=== PDF Page 305 ===
+
+$ git status
+On branch master
+Your branch is up-to-date with 'origin/master'.
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working
+directory)
+  modified:   .gitmodules
+  modified:   DbConnector (new commits)
+no changes added to commit (use "git add" and/or "git commit -a")
+설정 파일에 status.submodulesummary 항목을 설정하면 서브모듈의 변경 사항을 간단히 보여준다.
+$ git config status.submodulesummary 1
+$ git status
+On branch master
+Your branch is up-to-date with 'origin/master'.
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working
+directory)
+    modified:   .gitmodules
+    modified:   DbConnector (new commits)
+Submodules changed but not updated:
+* DbConnector c3f01dc...c87d55d (4):
+  > catch non-null terminated lines
+설정하고 난 후 git diff 명령을 실행해보자. .gitmodules 파일이 변경된 내용은 물론이거니와 업데이트해서
+커밋할 필요가 생긴 서브모듈 저장소의 변경 내용을 확인할 수 있다.
+300
+
+=== PDF Page 306 ===
+
+$ git diff
+diff --git a/.gitmodules b/.gitmodules
+index 6fc0b3d..fd1cc29 100644
+--- a/.gitmodules
++++ b/.gitmodules
+@@ -1,3 +1,4 @@
+ [submodule "DbConnector"]
+        path = DbConnector
+        url = https://github.com/chaconinc/DbConnector
++       branch = stable
+ Submodule DbConnector c3f01dc..c87d55d:
+  > catch non-null terminated lines
+  > more robust error handling
+  > more efficient db routine
+  > better connection routine
+서브모듈에 실제로 커밋할 커밋들의 정보를 보기에는 꽤 괜찮은 방법이다. 비슷한 식으로 커밋한 후에 로그에서 위와 같이
+살펴보려면 git log -p 명령으로 볼 수 있다.
+$ git log -p --submodule
+commit 0a24cfc121a8a3c118e0105ae4ae4c00281cf7ae
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Wed Sep 17 16:37:02 2014 +0200
+    updating DbConnector for bug fixes
+diff --git a/.gitmodules b/.gitmodules
+index 6fc0b3d..fd1cc29 100644
+--- a/.gitmodules
++++ b/.gitmodules
+@@ -1,3 +1,4 @@
+ [submodule "DbConnector"]
+        path = DbConnector
+        url = https://github.com/chaconinc/DbConnector
++       branch = stable
+Submodule DbConnector c3f01dc..c87d55d:
+  > catch non-null terminated lines
+  > more robust error handling
+  > more efficient db routine
+  > better connection routine
+git submodule update --remote 명령을 실행하면 기본적으로 모든 서브모듈을 업데이트한다. 서브모듈이 엄청
+많을 땐 특정 서브모듈만 업데이트하고자 할 수도 있는데 이럴 때는 서브모듈의 이름을 지정해서 명령을 실행한다.
+301
+
+=== PDF Page 307 ===
+
+서브모듈 관리하기
+메인 프로젝트에서 서브모듈을 사용할 때 서브모듈에서도 뭔가 작업을 해야 할 상황은 얼마든지 생길 수 있다. 메인
+프로젝트에서 작업하는 도중에 말이다(동시에 다른 서브모듈도 수정하거나). 만약 Git의 서브모듈 기능을 사용하지
+않는다면 다른 Dependency 관리 시스템(Maven이나 Rubygem 같은)을 사용할 수도 있다.
+이번 절에서는 서브모듈을 수정하고 그 내용을 담은 커밋을 유지한 채로 메인프로젝트와 서브모듈을 함께 관리하는
+방법을 살펴본다.
+서브모듈 저장소에서 git submodule update 명령을 실행하면 Git은 서브모듈의 변경 사항을 업데이트한다.
+하지만, 서브모듈 로컬 저장소는 “Detached HEAD” 상태로 남는다. 이 말은 변경 내용을 추적하는 로컬 브랜치(예를
+들자면 “master” 같은)가 없다는 것이다. 변경 내용을 추적하는 브랜치 없이 서브모듈에서 수정 작업을 하게 되면 이후에
+git submodule update 명령을 실행했을 때 수정한 내용을 잃어버릴 수 있다. 서브모듈 안에서 수정사항을
+추적하려면 다른 작업이 좀 더 필요하다.
+서브모듈이 브랜치를 추적하게 하려면 할 일이 두 가지다. 우선 각 서브모듈 디렉토리로 가서 추적할 브랜치를 Checkout
+하고 일을 시작해야 한다. 이후 서브모듈을 수정한 다음에 git submodule update --remote 명령을 실행해
+Upstream 에서 새로운 커밋을 가져온다. 이 커밋을 Merge 하거나 Rebase 하는 것은 선택할 수 있다.
+먼저 서브모듈 디렉토리로 가서 브랜치를 Checkout 하자.
+$ git checkout stable
+Switched to branch 'stable'
+여기서 “Merge” 를 해보자. update 명령을 쓸 때 --merge 옵션을 추가하면 Merge 하도록 지정할 수 있다. 아래
+결과에서 서버로부터 서브모듈의 변경 사항을 가져와서 Merge 하는 과정을 볼 수 있다.
+$ git submodule update --remote --merge
+remote: Counting objects: 4, done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 4 (delta 2), reused 4 (delta 2)
+Unpacking objects: 100% (4/4), done.
+From https://github.com/chaconinc/DbConnector
+   c87d55d..92c7337  stable     -> origin/stable
+Updating c87d55d..92c7337
+Fast-forward
+ src/main.c | 1 +
+ 1 file changed, 1 insertion(+)
+Submodule path 'DbConnector': merged in
+'92c7337b30ef9e0893e758dac2459d07362ab5ea'
+DbConnector 디렉토리로 들어가면 새로 수정한 내용이 로컬 브랜치 stable 에 이미 Merge 된 것을 확인할 수 있다.
+이제 다른 사람이 DbConnector 라이브러리를 수정해서 Upstream 저장소에 Push 한 상태에서 우리가 DbConnector
+라이브러리를 수정하면 무슨 일이 일어나는지 살펴보자.
+302
+
+=== PDF Page 308 ===
+
+$ cd DbConnector/
+$ vim src/db.c
+$ git commit -am 'unicode support'
+[stable f906e16] unicode support
+ 1 file changed, 1 insertion(+)
+이제 서브모듈을 업데이트하면 로컬 저장소에서 수정한 것이 무엇인지 Upstream 저장소에서 수정된 것이 무엇인지 볼
+수 있다. 이 둘을 합쳐야 한다.
+$ git submodule update --remote --rebase
+First, rewinding head to replay your work on top of it...
+Applying: unicode support
+Submodule path 'DbConnector': rebased into
+'5d60ef9bbebf5a0c1c1050f242ceeb54ad58da94'
+--rebase 옵션이나 --merge 옵션을 지정하지 않으면 Git은 로컬 변경사항을 무시하고 서버로부터 받은 해당
+서브모듈의 버전으로 Reset을 하고 Detached HEAD 상태로 만든다.
+$ git submodule update --remote
+Submodule path 'DbConnector': checked out
+'5d60ef9bbebf5a0c1c1050f242ceeb54ad58da94'
+일이 이렇게 되더라도 문제가 안 된다. Reset이 된 서브모듈 디렉토리로 가서 작업하던 브랜치를 Checkout 하고 직접
+origin/stable (아니면 원하는 어떠한 리모트 브랜치든)을 Merge 하거나 Rebase 하면 된다.
+서브모듈에 커밋하지 않은 변경 사항이 있는 채로 서브모듈을 업데이트하면 Git은 변경 사항을 가져오지만, 서브모듈의
+저장하지 않은 작업을 덮어쓰지 않는다.
+$ git submodule update --remote
+remote: Counting objects: 4, done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 4 (delta 0), reused 4 (delta 0)
+Unpacking objects: 100% (4/4), done.
+From https://github.com/chaconinc/DbConnector
+   5d60ef9..c75e92a  stable     -> origin/stable
+error: Your local changes to the following files would be overwritten by
+checkout:
+    scripts/setup.sh
+Please, commit your changes or stash them before you can switch branches.
+Aborting
+Unable to checkout 'c75e92a2b3855c9e5b66f915308390d9db204aca' in submodule
+path 'DbConnector'
+303
+
+=== PDF Page 309 ===
+
+업데이트 명령을 실행했을 때 Upstream 저장소의 변경 사항과 충돌이 나면 알려준다.
+$ git submodule update --remote --merge
+Auto-merging scripts/setup.sh
+CONFLICT (content): Merge conflict in scripts/setup.sh
+Recorded preimage for 'scripts/setup.sh'
+Automatic merge failed; fix conflicts and then commit the result.
+Unable to merge 'c75e92a2b3855c9e5b66f915308390d9db204aca' in submodule
+path 'DbConnector'
+이러면 서브모듈 디렉토리로 가서 충돌을 해결하면 된다.
+서브모듈 수정 사항 공유하기
+현재 서브모듈은 변경된 내용을 포함하고 있다. 이 중 일부는 서브모듈 자체를 업데이트하여 Upstream 저장소에서
+가져온 것이고 일부는 로컬에서 직접 수정한 내용이다. 로컬에서 수정한 것은 아직 공유하지 않았으므로 아무도 사용할 수
+없는 코드이다.
+$ git diff
+Submodule DbConnector c87d55d..82d2ad3:
+  > Merge from origin/stable
+  > updated setup script
+  > unicode support
+  > remove unnecessary method
+  > add new option for conn pooling
+서브모듈의 변경사항을 Push 하지 않은 채로 메인 프로젝트에서 커밋을 Push 하면 안 된다. 변경 사항을 Checkout 한
+다른 사람은 서브모듈이 의존하는 코드를 어디서도 가져올 수 없는 상황이 돼 곤란해진다. 서브모듈의 변경사항은 우리의
+로컬에만 있다.
+이런 불상사가 발생하지 않도록 하려면 메인 프로젝트를 Push 하기 전에 서브모듈을 모두 Push 했는지 검사하도록
+Git에게 물어보면 된다. git push 명령에 --recurse-submodules 옵션을 주고 이 옵션의 값으로 “check” 나
+“on-demand” 를 설정한다. “check” 는 간단히 서브모듈의 로컬 커밋이 Push 되지 않은 상태라면 현재의 Push 명령도
+실패하도록 하는 옵션이다.
+304
+
+=== PDF Page 310 ===
+
+$ git push --recurse-submodules=check
+The following submodule paths contain changes that can
+not be found on any remote:
+  DbConnector
+Please try
+    git push --recurse-submodules=on-demand
+or cd to the path and use
+    git push
+to push them to a remote.
+예제에서 볼 수 있는 대로 이러한 상황에서 다음으로 무엇을 해야 하는지 Git은 도움을 준다. 가장 단순한 방법은 각
+서브모듈 디렉토리로 가서 직접 일일이 Push를 해서 외부로 공유하고 나서 메인 프로젝트를 Push 하는 것이다. 이 옵션이
+항상 적용되도록 하고 싶으면 git config push.recurseSubmodules check 명령으로 설정한다.
+옵션으로 설정할 수 있는 다른 값으로 “on-demand” 값이 있는데, 이 값으로 설정하면 Git이 Push를 대신 시도한다.
+$ git push --recurse-submodules=on-demand
+Pushing submodule 'DbConnector'
+Counting objects: 9, done.
+Delta compression using up to 8 threads.
+Compressing objects: 100% (8/8), done.
+Writing objects: 100% (9/9), 917 bytes | 0 bytes/s, done.
+Total 9 (delta 3), reused 0 (delta 0)
+To https://github.com/chaconinc/DbConnector
+   c75e92a..82d2ad3  stable -> stable
+Counting objects: 2, done.
+Delta compression using up to 8 threads.
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (2/2), 266 bytes | 0 bytes/s, done.
+Total 2 (delta 1), reused 0 (delta 0)
+To https://github.com/chaconinc/MainProject
+   3d6d338..9a377d1  master -> master
+위에서 보듯이 Git이 메인 프로젝트를 Push 하기 전에 DbConnector 모듈로 들어가서 Push를 한다. 모종의 이유로
+서브모듈 Push에 실패한다면 메인 프로젝트의 Push 또한 실패하게 된다. git config
+push.recurseSubmodules on-demand 명령으로 설정할 수 있다.
+서브모듈 Merge 하기
+다른 누군가와 동시에 서브모듈을 수정하면 몇 가지 문제에 봉착하게 된다. 서브모듈의 히스토리가 갈라져서 상위
+프로젝트에 커밋했다면 사태를 바로잡아야 한다.
+305
+
+=== PDF Page 311 ===
+
+서브모듈의 커밋 두 개를 비교했을 때 Fast-Forward Merge가 가능한 경우 Git은 단순히 마지막 커밋을 선택한다.
+하지만, Fast-Forward가 가능하지 않으면 Git은 충돌 없이 Trivial Merge(Merge 커밋을 남기는 Merge)를 할 수 있다
+해도 Merge 하지 않는다. 서브모듈 커밋들이 분기됐다가 Merge 해야 하는 경우 아래와 같은 결과를 보게 된다.
+$ git pull
+remote: Counting objects: 2, done.
+remote: Compressing objects: 100% (1/1), done.
+remote: Total 2 (delta 1), reused 2 (delta 1)
+Unpacking objects: 100% (2/2), done.
+From https://github.com/chaconinc/MainProject
+   9a377d1..eb974f8  master     -> origin/master
+Fetching submodule DbConnector
+warning: Failed to merge submodule DbConnector (merge following commits
+not found)
+Auto-merging DbConnector
+CONFLICT (submodule): Merge conflict in DbConnector
+Automatic merge failed; fix conflicts and then commit the result.
+위 결과를 통해 현재 상태를 살펴본다면 Git은 분기된 두 히스토리 브랜치를 찾았고 Merge가 필요하다는 것을 알게 된다.
+이 상황은 “merge following commits not found”(Merge 커밋을 찾을 수 없음)라는 메시지로 표현하는데, 의미가 좀
+이상하지만 왜 그런지는 이어지는 내용으로 설명한다.
+이 문제를 해결하기 위해 서브모듈이 어떤 상태여야 하는지 알아야 한다. 이상하게도 Git은 이를 위한 정보를 충분히 주지
+않는다. 양쪽 히스토리에 있는 커밋의 SHA도 알려주지 않는다. 그래도 알아내는 건 간단하다. git diff 명령을
+실행하면 Merge 하려는 양쪽 브랜치에 담긴 커밋의 SHA를 알 수 있다.
+$ git diff
+diff --cc DbConnector
+index eb41d76,c771610..0000000
+--- a/DbConnector
++++ b/DbConnector
+위 같은 경우 eb41d76`이 로컬 서브모듈의 커밋이고 `c771610`이 Upstream에 있는 커밋이다. 서브모듈의
+디렉토리로 가면 현재 `eb41d76 커밋을 가리키고 있고 Merge 작업은 아직 이루어지지 않았다. 이 상태에서 현재
+eb41d76 커밋을 브랜치로 만들어 Merge 작업을 진행할 수 있다.
+중요한 건 다른 쪽 커밋의 SHA이다. 이쪽이 Merge 해야 할 대상이다. SHA 해시 값을 명시하여 곧바로 Merge 할 수도
+있고 대상이 되는 커밋을 새로 브랜치로 하나 만들어 Merge 할 수도 있다. 더 멋진 Merge 커밋 메시지를 위해서라도
+후자를 추천한다.
+문제를 해결하기 위해 서브모듈 디렉토리로 이동해서 git diff 에서 나온 두 번째 SHA를 브랜치로 만들고 직접 Merge
+한다.
+306
+
+=== PDF Page 312 ===
+
+$ cd DbConnector
+$ git rev-parse HEAD
+eb41d764bccf88be77aced643c13a7fa86714135
+$ git branch try-merge c771610
+(DbConnector) $ git merge try-merge
+Auto-merging src/main.c
+CONFLICT (content): Merge conflict in src/main.c
+Recorded preimage for 'src/main.c'
+Automatic merge failed; fix conflicts and then commit the result.
+실제 Merge 시 충돌이 일어났고 해결한 다음 커밋했다. 이후 Merge 한 서브모듈 결과로 메인 프로젝트를 업데이트한다.
+$ vim src/main.c ①
+$ git add src/main.c
+$ git commit -am 'merged our changes'
+Recorded resolution for 'src/main.c'.
+[master 9fd905e] merged our changes
+$ cd .. ②
+$ git diff ③
+diff --cc DbConnector
+index eb41d76,c771610..0000000
+--- a/DbConnector
++++ b/DbConnector
+@@@ -1,1 -1,1 +1,1 @@@
+- Subproject commit eb41d764bccf88be77aced643c13a7fa86714135
+ -Subproject commit c77161012afbbe1f58b5053316ead08f4b7e6d1d
+++Subproject commit 9fd905e5d7f45a0d4cbc43d1ee550f16a30e825a
+$ git add DbConnector ④
+$ git commit -m "Merge Tom's Changes" ⑤
+[master 10d2c60] Merge Tom's Changes
+① 먼저 충돌을 해결했다
+② 그리고 메인 프로젝트로 돌아간다.
+③ SHA-1를 다시 검사하고
+④ 충돌 난 서브모듈을 해결한다.
+⑤ Merge 결과를 커밋한다.
+좀 따라가기 어려울 수 있지만, 사실 그렇게 어려운 건 아니다.
+Git으로 이 문제를 해결하는 흥미로운 다른 방법이 있다. 위에서 찾은 두 커밋을 Merge 한 Merge 커밋이 서브모듈
+저장소에 존재하면 Git은 이 Merge 커밋을 가능한 해결책으로 내놓는다. 누군가 이미 이 두 커밋을 Merge 한 기록이 있기
+307
+
+=== PDF Page 313 ===
+
+때문에 Git은 이 Merge 커밋을 제안한다.
+이런 이유에서 위에서 본 Merge 할 수 없다는 오류 메시지가 “merge following commits not found” (Merge 커밋을
+찾을 수 없음) 인 것이다. 이런 메시지가 이상한 까닭은 누가 이런 일을 한다고 상상이나 했겠느냐는 말이다.
+위의 상황에서 마땅한 Merge 커밋을 하나 발견했다면 아래와 같은 결과를 볼 수 있다.
+$ git merge origin/master
+warning: Failed to merge submodule DbConnector (not fast-forward)
+Found a possible merge resolution for the submodule:
+ 9fd905e5d7f45a0d4cbc43d1ee550f16a30e825a: > merged our changes
+If this is correct simply add it to the index for example
+by using:
+  git update-index --cacheinfo 160000
+9fd905e5d7f45a0d4cbc43d1ee550f16a30e825a "DbConnector"
+which will accept this suggestion.
+Auto-merging DbConnector
+CONFLICT (submodule): Merge conflict in DbConnector
+Automatic merge failed; fix conflicts and then commit the result.
+Git이 제시한 해결책은 마치 git add 한 것처럼 현재 Index를 업데이트해서 충돌 상황을 해결하고 커밋하라는 것이다.
+물론 제시한 해결책을 따르지 않을 수도 있다. 서브모듈 디렉토리로 이동해서 변경사항을 직접 확인하고 Fast-forward
+Merge를 한 후 Test 해보고 커밋할 수도 있다.
+$ cd DbConnector/
+$ git merge 9fd905e
+Updating eb41d76..9fd905e
+Fast-forward
+$ cd ..
+$ git add DbConnector
+$ git commit -am 'Fast forwarded to a common submodule child'
+위와 같은 명령으로도 같은 작업을 수행할 수 있다. 이 방법을 사용하면 Merge 커밋에 해당하는 코드로 테스트까지 해 볼
+수 있으며, Merge 작업 후에 서브모듈 디렉토리가 해당 코드로 업데이트된다.
+서브모듈 팁
+서브모듈 작업을 도와줄 몇 가지 팁을 소개한다.
+서브모듈 Foreach 여행
+foreach 라는 서브모듈 명령이 있어 한 번에 각 서브모듈에 Git 명령을 내릴 수 있다. 한 프로젝트 안에 다수의 서브모듈
+프로젝트가 포함된 경우 유용하게 사용할 수 있다.
+308
+
+=== PDF Page 314 ===
+
+예를 들어 여러 서브모듈에 걸쳐 작업하던 도중에 새로운 기능을 추가하거나 버그 수정을 해야 하는 경우다. 간단히 아래와
+같은 명령으로 한꺼번에 모든 서브모듈에 Stash 명령을 실행할 수 있다.
+$ git submodule foreach 'git stash'
+Entering 'CryptoLibrary'
+No local changes to save
+Entering 'DbConnector'
+Saved working directory and index state WIP on stable: 82d2ad3 Merge from
+origin/stable
+HEAD is now at 82d2ad3 Merge from origin/stable
+위와 같이 명령을 실행하고 나면 모든 서브모듈과 함께 새 브랜치로 이동해서 작업할 준비를 마치게 된다.
+$ git submodule foreach 'git checkout -b featureA'
+Entering 'CryptoLibrary'
+Switched to a new branch 'featureA'
+Entering 'DbConnector'
+Switched to a new branch 'featureA'
+감이 잡히는가? 이 명령을 유용한 경우는 서브모듈을 포함한 메인 프로젝트의 전체 diff 내용을 한꺼번에 결과로 얻고자
+하는 경우이다.
+309
+
+=== PDF Page 315 ===
+
+$ git diff; git submodule foreach 'git diff'
+Submodule DbConnector contains modified content
+diff --git a/src/main.c b/src/main.c
+index 210f1ae..1f0acdc 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -245,6 +245,8 @@ static int handle_alias(int *argcp, const char
+***argv)
+      commit_pager_choice();
++     url = url_decode(url_orig);
++
+      /* build alias_argv */
+      alias_argv = xmalloc(sizeof(*alias_argv) * (argc + 1));
+      alias_argv[0] = alias_string + 1;
+Entering 'DbConnector'
+diff --git a/src/db.c b/src/db.c
+index 1aaefb6..5297645 100644
+--- a/src/db.c
++++ b/src/db.c
+@@ -93,6 +93,11 @@ char *url_decode_mem(const char *url, int len)
+        return url_decode_internal(&url, len, NULL, &out, 0);
+ }
++char *url_decode(const char *url)
++{
++       return url_decode_mem(url, strlen(url));
++}
++
+ char *url_decode_parameter_name(const char **query)
+ {
+        struct strbuf out = STRBUF_INIT;
+위의 결과로 알 수 있는 내용은 서브모듈에서 새 함수를 추가했고 메인 프로젝트에서 추가한 함수를 호출한다는 내용이다.
+예제로 살펴본 내용은 아주 단순한 예시일 뿐이지만 어떻게 foreach 명령을 유용하게 사용하는지 감 잡을 수 있을 것이다.
+유용한 Alias
+서브모듈을 이용하는 명령은 대부분 길이가 길어서 Alias를 만들어 사용하는 것이 편하다. 혹은 설정파일을 통해 기본
+값으로 모든 명령에 설정하지 않고 쉽게 서브모듈을 사용할 때도 Alias는 유용하다. Alias를 설정하는 방법은 Git
+Alias에서 이미 다루었다. 여기에서는 서브모듈에 관련된 몇 가지 유용한 Alias만 살펴본다.
+$ git config alias.sdiff '!'"git diff && git submodule foreach 'git diff'"
+$ git config alias.spush 'push --recurse-submodules=on-demand'
+$ git config alias.supdate 'submodule update --remote --merge'
+310
+
+=== PDF Page 316 ===
+
+위와 같이 설정하면 git supdate 명령으로 간단히 서브모듈을 업데이트할 수 있고 git spush 명령으로 간단히
+서브모듈도 업데이트가 필요한지 확인하며 메인 프로젝트를 Push 할 수 있다.
+서브모듈 사용할 때 주의할 점들
+전체적으로 서브모듈은 어렵지 않게 사용할 수 있지만, 서브모듈의 코드를 수정하는 경우에는 주의해야 한다.
+예를 들어 Checkout으로 브랜치를 변경하는 경우 서브모듈이 포함된 작업이라면 좀 애매하게 동작할 수 있다. 메인
+프로젝트에서 새 브랜치를 생성하고 Checkout 한 후 새로 서브모듈을 추가한다. 이후 다시 이전 브랜치로 Checkout
+하면 서브모듈 디렉토리는 추적하지 않는 디렉토리로 남게 된다.
+$ git checkout -b add-crypto
+Switched to a new branch 'add-crypto'
+$ git submodule add https://github.com/chaconinc/CryptoLibrary
+Cloning into 'CryptoLibrary'...
+...
+$ git commit -am 'adding crypto library'
+[add-crypto 4445836] adding crypto library
+ 2 files changed, 4 insertions(+)
+ create mode 160000 CryptoLibrary
+$ git checkout master
+warning: unable to rmdir CryptoLibrary: Directory not empty
+Switched to branch 'master'
+Your branch is up-to-date with 'origin/master'.
+$ git status
+On branch master
+Your branch is up-to-date with 'origin/master'.
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+    CryptoLibrary/
+nothing added to commit but untracked files present (use "git add" to
+track)
+물론 추적하지 않는 디렉토리를 지우는 건 쉽다. 이렇게 수동으로 지워야 한다는 게 이상한 것이다. 수동으로 디렉토리를
+지우고 다시 서브모듈을 추가했던 브랜치로 Checkout 하면 submodule update --init 명령을 실행해 줘야
+서브모듈의 코드가 나타난다(역주 - 이렇게 코드를 가져오고 나면 Detached HEAD가 된다).
+311
+
+=== PDF Page 317 ===
+
+$ git clean -ffdx
+Removing CryptoLibrary/
+$ git checkout add-crypto
+Switched to branch 'add-crypto'
+$ ls CryptoLibrary/
+$ git submodule update --init
+Submodule path 'CryptoLibrary': checked out
+'b8dda6aa182ea4464f3f3264b11e0268545172af'
+$ ls CryptoLibrary/
+Makefile    includes    scripts     src
+명령이 어려운 건 아니지만, 다시 봐도 이상하다.
+또 하나 주의 깊게 살펴볼 일은 서브디렉토리를 서브모듈로 교체하면서 브랜치간 이동하는 경우이다. 메인 프로젝트에서
+관리하던 서브디렉토리를 새 서브모듈로 교체할 때 주의를 기울이지 않으면 Git을 집어던지고 싶게 된다. 서브디렉토리를
+서브모듈로 교체하는 상황을 살펴보자. 우선 서브디렉토리를 그냥 지우고 바로 서브모듈을 추가한다면 오류가 나타난다.
+$ rm -Rf CryptoLibrary/
+$ git submodule add https://github.com/chaconinc/CryptoLibrary
+'CryptoLibrary' already exists in the index
+위와 같은 오류를 해결하려면 우선 CryptoLibrary 디렉토리를 관리대상에서 삭제하고 나서 서브모듈을 추가한다.
+$ git rm -r CryptoLibrary
+$ git submodule add https://github.com/chaconinc/CryptoLibrary
+Cloning into 'CryptoLibrary'...
+remote: Counting objects: 11, done.
+remote: Compressing objects: 100% (10/10), done.
+remote: Total 11 (delta 0), reused 11 (delta 0)
+Unpacking objects: 100% (11/11), done.
+Checking connectivity... done.
+위의 작업을 master가 아닌 어떤 브랜치에서 실행한 상황이다. 만약 다시 master 브랜치로 Checkout 하게 되면
+서브모듈이 아니라 서브디렉토리가 존재해야 하는 상황이 되는데, 아래와 같은 오류를 만나게 된다.
+312
+
+=== PDF Page 318 ===
+
+$ git checkout master
+error: The following untracked working tree files would be overwritten by
+checkout:
+  CryptoLibrary/Makefile
+  CryptoLibrary/includes/crypto.h
+  ...
+Please move or remove them before you can switch branches.
+Aborting
+물론 checkout -f 옵션을 붙여서 강제로 브랜치를 Checkout 할 수 있지만, 서브모듈에서 저장하지 않은 내용을
+되돌릴 수 없게 덮어쓰기 때문에 주의 깊게 강제 적용 옵션을 사용해야 한다.
+$ git checkout -f master
+warning: unable to rmdir CryptoLibrary: Directory not empty
+Switched to branch 'master'
+후에 다시 서브모듈을 추가했던 브랜치로 Checkout 하면 서브모듈 디렉토리 CryptoLibrary 는 비어 있다. 간혹 git
+submodule update 명령으로 서브모듈을 초기화하더라도 서브모듈 코드가 살아나지 않을 수 있다. 이럴 때는
+서브모듈 디렉토리로 이동해서 git checkout . 명령을 실행하면 서브모듈 코드가 나타난다. 서브모듈을 여러 개
+사용하는 경우 submodule foreach 명령으로 한꺼번에 코드를 복구할 수 있다.
+최신 버전의 Git은 서브모듈의 커밋 데이터도 메인 프로젝트의 .git 디렉토리에서 관리한다. 예전 버전의 Git과 달리
+서브모듈이 포함된 디렉토리를 망가뜨렸다 하더라도 기록해 둔 커밋 데이터는 쉽게 찾을 수 있다.
+이런 여러 도구와 함께 서브모듈을 사용한다면 간단하고 효율적으로 메인 프로젝트와 하위 프로젝트를 동시에 관리할 수
+있다.
+Bundle
+앞에서 Git 데이터를 네트워크를 거쳐 전송하는 일반적인 방법(HTTP , SSH등)을 다루었었다. 일반적으로 사용하진
+않지만, 꽤 유용한 방법이 하나 더 있다.
+Git에는 “Bundle” 이란 것이 있다. 데이터를 한 파일에 몰아넣는 것이다. 이 방법은 다양한 경우 유용하게 사용할 수 있다.
+예를 들어 네트워크가 불통인데 변경사항을 동료에게 보낼 때, 출장을 나갔는데 보안상의 이유로 로컬 네트워크에
+접속하지 못할 때, 통신 인터페이스 장비가 고장났을 때, 갑자기 공용 서버에 접근하지 못할 때, 누군가에게 수정사항을
+이메일로 보내야 하는데 40개 씩이나 되는 커밋을 format-patch 로 보내고 싶지 않을 때를 예로 들 수 있다.
+바로 이럴 때 git bundle 이 한 줄기 빛이 되어준다. bundle 명령은 보통 git push 명령으로 올려 보낼 모든 것을
+감싸서 한 바이너리 파일로 만든다. 이 파일을 이메일로 보내거나 USB로 다른 사람에게 보내서 다른 저장소에 풀어서
+(Unbundle) 사용한다.
+간단한 예제를 보자. 이 저장소에는 커밋 두 개가 있다.
+313
+
+=== PDF Page 319 ===
+
+$ git log
+commit 9a466c572fe88b195efd356c3f2bbeccdb504102
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Wed Mar 10 07:34:10 2010 -0800
+    second commit
+commit b1ec3248f39900d2a406049d762aa68e9641be25
+Author: Scott Chacon <schacon@gmail.com>
+Date:   Wed Mar 10 07:34:01 2010 -0800
+    first commit
+이 저장소를 다른 사람에게 통째로 보내고 싶은데 그 사람의 저장소에 Push 할 권한이 없거나, 그냥 Push 하고 싶지 않을
+때, git bundle create 명령으로 Bundle을 만들 수 있다.
+$ git bundle create repo.bundle HEAD master
+Counting objects: 6, done.
+Delta compression using up to 2 threads.
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (6/6), 441 bytes, done.
+Total 6 (delta 0), reused 0 (delta 0)
+이렇게 repo.bundle 이라는 이름의 파일을 생성할 수 있다. 이 파일에는 이 저장소의 master 브랜치를 다시 만드는 데
+필요한 모든 정보가 다 들어 있다. bundle 명령으로 모든 Refs를 포함하거나 Bundle에 포함할 특정 구간의 커밋을
+지정할 수 있다. 이 Bundle을 다른 곳에서 Clone 하려면 위의 명령처럼 HEAD Refs를 포함해야 한다.
+repo.bundle 파일을 다른 사람에게 이메일로 전송하거나 USB 드라이브에 담아서 나갈 수 있다.
+혹은 repo.bundle 파일을 일할 곳으로 어떻게든 보내놓으면 이 Bundle 파일을 마치 URL에서 가져온 것처럼 Clone
+해서 사용할 수 있다.
+$ git clone repo.bundle repo
+Cloning into 'repo'...
+...
+$ cd repo
+$ git log --oneline
+9a466c5 second commit
+b1ec324 first commit
+Bundle 파일에 HEAD Refs를 포함하지 않으려면 -b master 옵션을 써주거나 포함시킬 브랜치를 지정해줘야 한다.
+그렇지 않으면 Git은 어떤 브랜치로 Checkout 할지 알 수 없다.
+이제 새 커밋 세 개를 추가해서 채운 저장소를 다시 원래 Bundle을 만들었던 저장소로 USB든 메일이든 Bundle로 보내
+새 커밋을 옮겨보자.
+314
+
+=== PDF Page 320 ===
+
+$ git log --oneline
+71b84da last commit - second repo
+c99cf5b fourth commit - second repo
+7011d3d third commit - second repo
+9a466c5 second commit
+b1ec324 first commit
+먼저 Bundle 파일에 추가시킬 커밋의 범위를 정해야 한다. 전송할 최소한의 데이터를 알아서 인식하는 네트워크
+프로토콜과는 달리 Bundle 명령을 사용할 때는 수동으로 지정해야 한다. 전체 저장소를 Bundle 파일로 만들 수도
+있지만, 차이점만 Bundle로 묶는 게 좋다. 예제에서는 로컬에서 만든 세 개의 커밋만 묶는다.
+우선 차이점을 찾아내야 Bundle 파일을 만들 수 있다. 범위로 커밋 가리키기에서 살펴본 대로 숫자를 사용하여 커밋의
+범위를 지정할 수 있다. 원래 Clone 한 브랜치인 master에는 없던 세 개의 커밋을 얻어내려면
+origin/master..master 또는 master ^origin/master 파라미터를 쓰면 된다. log 명령으로 시험해볼 수
+있다.
+$ git log --oneline master ^origin/master
+71b84da last commit - second repo
+c99cf5b fourth commit - second repo
+7011d3d third commit - second repo
+이제 Bundle 파일에 포함할 커밋을 얻었으니 묶어보자. git bundle create 명령에 Bundle 파일의 이름과 묶어
+넣을 커밋의 범위를 지정한다.
+$ git bundle create commits.bundle master ^9a466c5
+Counting objects: 11, done.
+Delta compression using up to 2 threads.
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (9/9), 775 bytes, done.
+Total 9 (delta 0), reused 0 (delta 0)
+이제 디렉토리에 commits.bundle 파일이 생겼다. 이 파일을 동료에게 보내면 원래의 저장소에 일이 얼마나
+진행되었든 간에 파일 내용을 적용할 수 있다.
+이 Bundle 파일을 동료가 받았으면 원래 저장소에 적용하기 전에 무엇이 들어 있는지 살펴볼 수 있다. 우선 bundle
+verify 명령으로 파일이 올바른 Git Bundle인가, 제대로 적용하는 데 필요한 모든 히스토리가 현재 저장소에 있는가
+확인한다.
+315
+
+=== PDF Page 321 ===
+
+$ git bundle verify ../commits.bundle
+The bundle contains 1 ref
+71b84daaf49abed142a373b6e5c59a22dc6560dc refs/heads/master
+The bundle requires these 1 ref
+9a466c572fe88b195efd356c3f2bbeccdb504102 second commit
+../commits.bundle is okay
+만약 앞에서 Bundle 파일을 만들 때 커밋 세 개로 만들지 않고 마지막 두 커밋으로만 Bundle 파일을 만들면 커밋이
+모자라기 때문에 최초에 Bundle을 만들었던 저장소에 새 Bundle 파일을 합칠 수 없다. 이런 문제를 verify 명령으로
+확인할 수 있다.
+$ git bundle verify ../commits-bad.bundle
+error: Repository lacks these prerequisite commits:
+error: 7011d3d8fc200abe0ad561c011c3852a4b7bbe95 third commit - second repo
+제대로 만든 Bundle 파일이라면 커밋을 가져와서 최초 저장소에 합칠 수 있다. 데이터를 가져올 Bundle 파일에 어떤
+브랜치를 포함하고 있는지 살펴보려면 아래와 같은 명령으로 확인할 수 있다.
+$ git bundle list-heads ../commits.bundle
+71b84daaf49abed142a373b6e5c59a22dc6560dc refs/heads/master
+앞에서 verify 명령을 실행했을 때도 브랜치 정보를 확인할 수 있다. 여기서 중요하게 짚을 부분은 fetch 명령이나
+pull 명령으로 가져올 대상이 되는 브랜치를 Bundle 파일에서 확인하는 것이다. 예를 들어 Bundle 파일의 master
+브랜치를 작업하는 저장소의 'other-master' 브랜치로 가져오는 명령은 아래와 같이 실행한다.
+$ git fetch ../commits.bundle master:other-master
+From ../commits.bundle
+ * [new branch]      master     -> other-master
+이런 식으로 작업하던 저장소의 'master' 브랜치에 어떤 작업을 했든 상관없이 Bundle 파일로부터 커밋을 독립적으로
+'other-master' 브랜치로 가져올 수 있다.
+$ git log --oneline --decorate --graph --all
+* 8255d41 (HEAD, master) third commit - first repo
+| * 71b84da (other-master) last commit - second repo
+| * c99cf5b fourth commit - second repo
+| * 7011d3d third commit - second repo
+|/
+* 9a466c5 second commit
+* b1ec324 first commit
+git bundle 명령으로 데이터를 전송할 네트워크 상황이 여의치 않거나 쉽게 공유할 수 있는 저장소를 준비하기 어려울
+316
+
+=== PDF Page 322 ===
+
+때도 히스토리를 쉽게 공유할 수 있다.
+Replace
+히스토리(혹은 데이터베이스)에 일단 저장한 Git의 개체는 기본적으로 변경할 수 없다. 하지만 변경된 것처럼 보이게 하는
+재밌는 기능이 숨어 있다.
+Git의 replace 명령은 "어떤 개체를 읽을 때 항상 다른 개체로 보이게" 한다. 히스토리에서 어떤 커밋이 다른 커밋처럼
+보이도록 할 때 이 명령이 유용하다(`git filter-branch`를 사용하여 전체 히스토리를 다시 작성할 필요가 없는 것이다).
+예를 들어 현재 프로젝트의 히스토리가 아주 방대한 상태다. 히스토리를 둘로 나누어서 새로 시작하는 개발자에게는
+히스토리를 아주 간단한 몇 개의 커밋으로 만들어서 제공하고, 프로젝트 히스토리를 분석할 사람에게는 전체 히스토리를
+제공하는 상황을 생각해보자. replace 명령으로 간단해진 히스토리를 전체 히스토리의 마지막 부분에 연결해서 사용할
+수 있다. 이렇게 히스토리를 변경하는 데도 커밋을 새로 쓰지 않는 매우 훌륭한 기능이다(Rebase를 생각해보자. 한 부모를
+변경하면 이후의 커밋은 모두 재작성된다).
+위와 같은 상황을 한번 해보자. 히스토리가 어느 정도 쌓여 있는 Git 저장소를 두 저장소로 분리해서 하나는 최신 커밋 몇
+개만 유지하도록 하고 다른 하나는 전체 히스토리를 유지하기로 한다. 이렇게 분리한 두 히스토리를 커밋을 재작성하지
+않고 replace 명령을 사용하여 연결한다.
+아래 예제로 사용하는 저장소는 히스토리에 커밋 5개가 있다.
+$ git log --oneline
+ef989d8 fifth commit
+c6e1e95 fourth commit
+9c68fdc third commit
+945704c second commit
+c1822cf first commit
+예제의 히스토리를 둘로 나누어보자. 하나는 첫 번째부터 네 번째 커밋까지 히스토리로 만들어 원래의 히스토리를 그대로
+유지한다. 다른 새 히스토리는 네 번째 커밋과 다섯 번째 커밋만을 포함하도록 한다.
+317
+
+=== PDF Page 323 ===
+
+원래의 히스토리를 유지하는 히스토리를 만들기는 쉽다. 원래 히스토리 상에 기준점을 잡아 새 브랜치를 만들고
+히스토리를 유지할 리모트 저장소로 Push 하면 간단히 해결된다.
+$ git branch history c6e1e95
+$ git log --oneline --decorate
+ef989d8 (HEAD, master) fifth commit
+c6e1e95 (history) fourth commit
+9c68fdc third commit
+945704c second commit
+c1822cf first commit
+318
+
+=== PDF Page 324 ===
+
+history 브랜치를 새 저장소에 master 브랜치로 Push 한다.
+319
+
+=== PDF Page 325 ===
+
+$ git remote add project-history https://github.com/schacon/project-
+history
+$ git push project-history history:master
+Counting objects: 12, done.
+Delta compression using up to 2 threads.
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (12/12), 907 bytes, done.
+Total 12 (delta 0), reused 0 (delta 0)
+Unpacking objects: 100% (12/12), done.
+To git@github.com:schacon/project-history.git
+ * [new branch]      history -> master
+원래 히스토리를 유지하는 히스토리를 Push 했다. 이제 남은 어려운 부분은 최신 커밋만 유지하도록 히스토리를 중간에
+끊고 새로 만드는 작업이다. 새로 만든 히스토리와 원래 히스토리를 나중에 연결해서 사용할 때 네 번째 커밋을 연결하도록
+작업한다. 따라서 새로 만든 히스토리는 네 번째 이후의 커밋만 유지한다.
+$ git log --oneline --decorate
+ef989d8 (HEAD, master) fifth commit
+c6e1e95 (history) fourth commit
+9c68fdc third commit
+945704c second commit
+c1822cf first commit
+이런 예제 같은 경우 히스토리를 어떻게 연결하는지 설명하는 커밋을 만들어 나중에 개발자든 누구든 전체 히스토리를 볼
+수 있도록 하는 것이 좋다. 이런 내용과 함께 네 번째 커밋 이전의 상태를 담을 새 커밋을 하나 만들고 네 번째 이후 커밋을
+이 새 커밋 위에 Rebase 하기로 한다.
+기준으로 삼을 커밋을 선택하고 새 커밋을 만든다. 예제는 9c68fdc 해시 값을 갖는 세 번째 커밋이 된다. 세 번째 커밋의
+트리 내용을 기본 상태로 삼고 네 번째 이후 커밋을 히스토리에 쌓는다. commit-tree 명령을 사용해서 새 커밋을
+만든다. 명령에 트리 개체를 전달하면 부모 없는 새 커밋을 생성하여 해시 값을 반환한다.
+$ echo 'get history from blah blah blah' | git commit-tree 9c68fdc^{tree}
+622e88e9cbfbacfb75b5279245b9fb38dfea10cf
+
+commit-tree 명령은 'Plumbing' 명령 중 하나다. 저수준 명령은 일반적으로 직접 사용할 일이
+없다. 'Plumbing' 명령들은 주로 사용하는 고수준 Git 명령이 하는 작업을 잘게 쪼개어 수행할 때
+사용한다. 이 책에서 위의 예제처럼 특별한 작업을 위해 간혹 저수준 명령을 사용하긴 하지만 매일같이
+사용하지는 않는다. 다른 여러 저수준 명령을 사용하는 예제는 Plumbing 명령과 Porcelain 명령에서
+확인할 수 있다.
+320
+
+=== PDF Page 326 ===
+
+이제 네 번째 커밋 이후의 히스토리를 쌓을 커밋이 준비됐다. git rebase --onto 명령으로 네 번째 이후의 커밋을 새
+커밋에 Rebase 한다. --onto 옵션 뒤에 전달할 커밋은 쌓아올릴 대상이 되는 커밋을 입력한다. 위에서 commit-tree
+명령으로 반환받은 커밋을 사용하고 Rebase의 기준은 네 번째 커밋의 부모 커밋, 즉 세 번째 커밋인 9c68fdc 해시를
+전달한다.
+$ git rebase --onto 622e88 9c68fdc
+First, rewinding head to replay your work on top of it...
+Applying: fourth commit
+Applying: fifth commit
+321
+
+=== PDF Page 327 ===
+
+위와 같이 Rebase 하고 나면 최신 커밋만 유지하는 새로운 히스토리가 만들어진다. 새 히스토리의 가장 첫 번째 커밋에는
+어떻게 이전 히스토리를 연결해서 확인할 수 있는지 설명하는 내용이 포함되게 된다. 이렇게 생성한 새 히스토리를 새
+리모트 저장소로 Push 한다. 그리고 나서 Clone 해서 히스토리를 살펴보면 가장 최근 커밋 몇 개만 보이고 가장 첫
+커밋에는 히스토리를 연결하는 내용이 있게 된다.
+이제 역할을 바꾸어 새 히스토리를 Clone 하고 전체 히스토리까지 확인하고자 하는 작업을 예로 들어보자. 원래
+히스토리로부터 분리한 새 히스토리 위에서 원래 히스토리를 확인하려면 우선 원래 히스토리를 포함하는 리모트 저장소를
+추가하고 히스토리를 Fetch 한다.
+322
+
+=== PDF Page 328 ===
+
+$ git clone https://github.com/schacon/project
+$ cd project
+$ git log --oneline master
+e146b5f fifth commit
+81a708d fourth commit
+622e88e get history from blah blah blah
+$ git remote add project-history https://github.com/schacon/project-
+history
+$ git fetch project-history
+From https://github.com/schacon/project-history
+ * [new branch]      master     -> project-history/master
+위와 같이 실행하고 나면 master 브랜치에는 간단한 히스토리의 최신 커밋만 있다. 그리고 project-
+history/master 브랜치에는 원래 히스토리 전체가 있게 된다.
+$ git log --oneline master
+e146b5f fifth commit
+81a708d fourth commit
+622e88e get history from blah blah blah
+$ git log --oneline project-history/master
+c6e1e95 fourth commit
+9c68fdc third commit
+945704c second commit
+c1822cf first commit
+이 두 히스토리를 연결하기 위해 git replace 명령을 사용하여 새 히스토리의 커밋이 원래 히스토리에 속한 커밋을
+가리키도록 할 수 있다. 예제에서는 새 히스토리의 'fourth commit’과 project-history/master 브랜치의
+'fourth commit’을 파라미터로 전달한다.
+$ git replace 81a708d c6e1e95
+이제 master 브랜치에서 히스토리를 조회해보면 아래와 같은 히스토리가 된다.
+$ git log --oneline master
+e146b5f fifth commit
+81a708d fourth commit
+9c68fdc third commit
+945704c second commit
+c1822cf first commit
+323
+
+=== PDF Page 329 ===
+
+히스토리가 그럴듯하다. 연결한 네 번째 커밋 이후의 커밋을 재작성하지 않고도 replace 명령으로 간단하게 히스토리를
+변경했다. 변경한 히스토리에서도 bisect 나 blame 같은 다른 Git 명령을 사용할 수 있다.
+연결된 히스토리를 보면 replace 명령으로 커밋을 변경했음에도 여전히 c6e1e95 해시가 아니라 81a708d 해시로
+나오는 것을 확인할 수 있다. 반면 cat-file 명령으로 보면 c6e1e95 해시의 내용이 출력된다.
+$ git cat-file -p 81a708d
+tree 7bc544cf438903b65ca9104a1e30345eee6c083d
+parent 9c68fdceee073230f19ebb8b5e7fc71b479c0252
+author Scott Chacon <schacon@gmail.com> 1268712581 -0700
+committer Scott Chacon <schacon@gmail.com> 1268712581 -0700
+fourth commit
+Replace 이전 네 번째 커밋 81a708d 해시의 부모는 622e88e 해시이므로 위의 9c68fdce 로 나오는 내용은 변경한
+대상인 c6e1e95 해시의 내용이다.
+324
+
+=== PDF Page 330 ===
+
+이렇게 히스토리를 연결하는 것 같은 Replace 명령의 결과는 Refs로 관리한다.
+$ git for-each-ref
+e146b5f14e79d4935160c0e83fb9ebe526b8da0d commit refs/heads/master
+c6e1e95051d41771a649f3145423f8809d1a74d4 commit
+refs/remotes/history/master
+e146b5f14e79d4935160c0e83fb9ebe526b8da0d commit refs/remotes/origin/HEAD
+e146b5f14e79d4935160c0e83fb9ebe526b8da0d commit refs/remotes/origin/master
+c6e1e95051d41771a649f3145423f8809d1a74d4 commit
+refs/replace/81a708dd0e167a3f691541c7a6463343bc457040
+Replace 내용을 Refs로 관리한다는 말은 손쉽게 이 내용을 서버로 Push 하여 다른 팀원과 공유할 수 있다는 것을 뜻한다.
+이렇게 Replace하는 것이 유용하지 않을 수도 있다. 어쨌든 모든 팀원이 두 히스토리를 다운로드해야 하는데 굳이 나눠야
+하나? 하지만, 어떨 때는 Replace하는 것이 유용할 수도 있다.
+Credential 저장소
+SSH 프로토콜을 사용하여 리모트 저장소에 접근할 때 Passphase 없이 생성한 SSH Key를 사용하면 사용자이름과
+암호를 입력하지 않고도 안전하게 데이터를 주고받을 수 있다. 반면 HTTP 프로토콜을 사용하는 경우는 매번
+사용자이름과 암호를 입력해야 한다.
+다행히도 Git은 이렇게 매번 인증정보(Credential)를 입력하는 경우 인증정보를 저장해두고 자동으로 입력해주는
+시스템을 제공한다. Git Credential 기능이 제공하는 옵션은 아래와 같다.
+• 일단 기본적으로 아무런 설정도 하지 않으면 어떤 암호도 저장하지 않는다. 이 경우 인증이 필요한 때 매번
+사용자이름과 암호를 입력해야 한다.
+• “cache” 모드로 설정하면 일정 시간 동안 메모리에 사용자이름과 암호 같은 인증정보를 기억한다. 이 정보를 Disk에
+저장하지는 않으며 메모리에서도 15분 까지만 유지한다.
+• “store” 모드로 설정하면 인증정보를 Disk의 텍스트 파일로 저장하며 계속 유지한다. 계속 유지한다는 말은
+리모트의 인증정보를 변경하지 않는 한 다시 인증정보를 입력하지 않아도 접근할 수 있다는 말이다. “store” 모드를
+사용할 때 주의할 점은 인증정보가 사용자 홈 디렉토리 아래에 일반 텍스트 파일로 저장된다는 점이다.
+• Mac에서 Git을 사용하는 경우 “osxkeychain” 모드를 사용하면 Mac에서 제공하는 Keychain 시스템에
+사용자이름과 암호를 현재 로그인 계정에 속하게 저장한다. “store” 모드하면 인증정보를 Disk에 저장하고
+인증정보가 만료되지 않는 점은 같지만, Safari 브라우저가 인증정보를 저장하는 것과 같은 수준으로 암호화해서
+저장한다는 점이 다르다.
+• Windows 환경에서는 “Git Credential Manager for Windows. ” 라는 Helper가 있다. “osxkeychain”
+Helper와 비슷하게 동작하며 Windows Credential Store를 사용하여 안전하게 인증정보를 저장한다.
+https://github.com/Microsoft/Git-Credential-Manager-for-Windows 에서 다운로드 받을 수 있다.
+위에서 설명한 여러 모드 중 하나를 아래와 같이 설정할 수 있다.
+325
+
+=== PDF Page 331 ===
+
+$ git config --global credential.helper cache
+추가 옵션을 지정할 수 있는 Helper도 있다. “store” Helper는 --file <path> 옵션을 사용하여 인증정보를 저장할
+텍스트 파일의 위치를 지정한다. 기본 값은 ~/.git-credentials 이다. “cache” Helper는 --timeout
+<seconds> 옵션을 사용하여 언제까지 인증정보를 메모리에 유지할지 설정한다. 기본 값은 “900” 초로 15분이다. 기본
+경로가 아닌 다른 경로를 지정해서 인증정보를 저장하려면 아래와 같이 실행한다.
+$ git config --global credential.helper 'store --file ~/.my-credentials'
+Helper를 여러개 섞어서 쓸 수도 있다. 인증이 필요한 리모트에 접근할 때 Git은 인증정보를 찾는데 Helper가 여러개
+있으면 순서대로 찾는다. 반대로 인증정보를 저장할 때는 설정한 모든 모드에 저장한다. 아래 예제는 첫 번째 Path에 대해
+인증정보를 읽거나 저장에 실패하면 두 번째 모드에 따라 메모리에서만 인증정보를 유지한다.
+[credential]
+    helper = store --file /mnt/thumbdrive/.git-credentials
+    helper = cache --timeout 30000
+뚜껑을 열어보면
+실제로는 어떻게 동작하는지 살펴보자. Git의 Credential-Helper 시스템의 기본 명령은 git credential 이다. 이
+명령이 하위 명령이나 옵션, 표준입력으로 필요한 정보를 입력받아 전달한다.
+이 과정은 예제를 통해 이해하는 편이 쉽다. Credential Helper를 사용하도록 설정하고 mygithost 라는 호스트의
+인증정보가 저장된 상태이다. 아래 예제는 “fill” 명령으로 Git이 특정 호스트에 대한 인증정보를 얻으려는 과정을
+보여준다.
+326
+
+=== PDF Page 332 ===
+
+$ git credential fill ①
+protocol=https ②
+host=mygithost
+③
+protocol=https ④
+host=mygithost
+username=bob
+password=s3cre7
+$ git credential fill ⑤
+protocol=https
+host=unknownhost
+Username for 'https://unknownhost': bob
+Password for 'https://bob@unknownhost':
+protocol=https
+host=unknownhost
+username=bob
+password=s3cre7
+① 이 명령으로 인증정보를 얻어오는 과정을 시작한다.
+② 이제 Git-credential 명령은 표준 입력으로 사용자의 입력을 기다린다. 인증정보가 필요한 대상의 프로토콜과
+호스트이름을 입력한다.
+③ 빈 라인을 하나 입력하면 입력이 끝났다는 것을 의미한다. 이제 입력한 내용에 해당하는 인증정보를 응답해야 한다.
+④ Git-credential 명령이 전달받은 내용으로 인증정보를 찾아보고 찾으면 표준출력으로 찾은 정보를 응답한다.
+⑤ 물론 요청에 대한 인증정보가 없을 수도 있다. 이렇게 되면 Git이 사용자이름과 암호를 사용자가 입력하도록 메시지를
+띄우고 값도 입력받는다. 입력받은 값을 다시 표준출력으로 응답한다.
+이 Credential 시스템은 사실 Git과 분리된 독립적인 프로그램을 실행시켜 동작한다. 어떤 프로그램을 실행시킬지는
+credential.helper 설정 값에 따른다. 이 설정 값을 아래와 같이 설정한다.
+설정 값 결과
+foo git-credential-foo 실행
+foo -a --opt=bcd git-credential-foo -a --opt=bcd 실행
+/absolute/path/foo -xyz /absolute/path/foo -xyz 실행
+!f() { echo "password=s3cre7"; }; f ! 뒤의 코드를 쉘에서 실행
+따라서 위에서 살펴본 여러 Helper는 사실 git-credential-cache, git-credential-store 같은 명령이다.
+설정을 통해 이 명령들이 옵션이나 하위 명령을 받아서 실행하게 한다. 이 명령의 일반적인 형태는 “git-credential-foo
+[args] <action>” 이다. git-credential 명령과 마찬가지로 표준입력/표준출력을 프로토콜로 사용하지만 처리하는
+액션(하위 명령)은 아래와 같이 다소 다르다.
+• get - 사용자이름과 암호를 요구하는 액션
+• store - Helper에서 인증정보를 저장하는 액션
+327
+
+=== PDF Page 333 ===
+
+• erase - Helper에서 인증정보를 삭제하는 액션
+store 나 erase 액션은 따로 결과를 출력할 필요가 없다(Git은 결과를 무시). get 액션의 결과는 Git이 주의 깊게
+관찰해서 가져다 사용하므로 매우 중요하다. Helper는 전달받은 내용으로 인증정보를 찾고 저장된 인증정보가 없다면
+아무런 결과도 출력하지 않고 종료하면 된다. 적당한 인증정보를 찾았을 때는 전달받은 내용에 찾은 인증정보를 추가하여
+결과로 응답한다. 결과는 몇 라인의 할당 구문으로 구성하며, Git은 이 결과를 받아서 사용한다.
+아래 예제는 위에서 살펴본 예제와 같은 내용으로 git-crediential 명령 대신 git-credential-store 명령을
+직접 사용한다.
+$ git credential-store --file ~/git.store store ①
+protocol=https
+host=mygithost
+username=bob
+password=s3cre7
+$ git credential-store --file ~/git.store get ②
+protocol=https
+host=mygithost
+username=bob ③
+password=s3cre7
+① git-credential-store Helper에게 인증정보를 저장하도록 한다. 저장할 인증정보는 사용자이름이 “bob”,
+암호가 “s3cre7” 이다. 프로토콜과 호스트가 https://mygithost 일 때 사용한다.
+② 저장한 인증정보를 가져온다. 이미 아는 https://mygithost 리모트 주소를 호스트와 프로토콜로 나누어
+표준입력으로 전달하고 한 라인을 비운다.
+③ git-credential-store 명령은 <1>에서 저장한 사용자이름과 암호를 표준출력으로 응답한다.
+~/git.store 파일의 내용은 사실 아래와 같다.
+https://bob:s3cre7@mygithost
+단순한 텍스트파일로 인증정보가 포함된 URL 형태로 저장한다. osxkeychain 이나 wincred Helper를 사용하면
+OS에서 제공하는 좀 더 안전한 저장소에 인증정보를 저장한다. cache Helper의 경우 나름의 형식으로 메모리에
+인증정보를 저장하고 다른 프로세스에서는 (메모리의 내용을) 읽어갈 수 없다.
+맞춤 Credential 캐시
+git-credential-store 나 다른 명령도 독립된 프로그램이다. 아무 스크립트나 프로그램도 Git Credential
+Helper가 될 수 있다. 이미 Git이 제공하는 Helper로도 충분하지만 모든 경우를 커버하지 않는다. 예를 들어 어떤
+인증정보는 팀 전체가 공유해야 한다. 배포에 사용하는 인증정보가 그렇다. 이 인증정보는 공유하는 디렉토리에
+저장해두고 사용한다. 이 인증정보는 자주 변경되기 때문에 로컬 Credential 저장소에 저장하지 않고 사용하고자 한다.
+이런 경우라면 Git이 제공하는 Helper로는 부족하며 자신만의 맞춤 Helper가 필요하다. 맞춤 Helper는 아래와 같은
+기능을 제공해야 한다.
+328
+
+=== PDF Page 334 ===
+
+1. 새 맞춤 Helper가 집중해야 할 액션은 get 뿐이다. store 나 erase 액션은 저장하는 기능이기 때문에 이 액션을
+받으면 깔끔하게 바로 종료한다.
+2. 공유하는 Credential 파일은 git-credential-store 명령이 저장하는 형식과 같은 형식을 사용한다.
+3. Credential 파일의 위치는 기본 값을 사용해도 되지만 파일 경로를 넘길 수 있다.
+예제로 보여주는 맞춤 Helper도 Ruby로 작성한다. 하지만, 다른 어떤 언어를 사용해도 Git이 실행할 수만 있다면
+상관없다. 작성한 저장소 Helper의 소스코드는 아래와 같다.
+#!/usr/bin/env ruby
+require 'optparse'
+path = File.expand_path '~/.git-credentials' ①
+OptionParser.new do |opts|
+    opts.banner = 'USAGE: git-credential-read-only [options] <action>'
+    opts.on('-f', '--file PATH', 'Specify path for backing store') do
+|argpath|
+        path = File.expand_path argpath
+    end
+end.parse!
+exit(0) unless ARGV[0].downcase == 'get' ②
+exit(0) unless File.exists? path
+known = {} ③
+while line = STDIN.gets
+    break if line.strip == ''
+    k,v = line.strip.split '=', 2
+    known[k] = v
+end
+File.readlines(path).each do |fileline| ④
+    prot,user,pass,host =
+fileline.scan(/^(.*?):\/\/(.*?):(.*?)@(.*)$/).first
+    if prot == known['protocol'] and host == known['host'] and user ==
+known['username'] then
+        puts "protocol=#{prot}"
+        puts "host=#{host}"
+        puts "username=#{user}"
+        puts "password=#{pass}"
+        exit(0)
+    end
+end
+① 우선 명령 옵션을 처리한다. 옵션으로는 Credential 파일명이 들어온다. 기본 값은 ~/.git-credentials 이다.
+② Helper 프로그램은 get 액션만 처리하며 Credential 파일이 존재하는 경우만 처리한다.
+329
+
+=== PDF Page 335 ===
+
+③ 이후에는 빈 라인이 나타날 때까지 표준입력으로부터 한 줄 한 줄 읽는다. 각 라인을 파싱하여 known 해시에 저장하고
+<4>의 응답에서 사용한다.
+④ 이 루프에서 Credential 파일을 읽어서 <3>의 해시에 해당하는 정보를 찾는다. known 해시에서 프로토콜과 호스트
+정보가 일치하는 경우 사용자이름과 암호를 포함하여 결과를 출력한다.
+이 파일을 git-credential-read-only 로 저장하고 PATH 에 등록된 디렉토리 중 하나에 위치시키고 실행 권한을
+부여한다. Helper를 실행하면 아래와 같다.
+$ git credential-read-only --file=/mnt/shared/creds get
+protocol=https
+host=mygithost
+protocol=https
+host=mygithost
+username=bob
+password=s3cre7
+위에서 저장한 파일 이름이 “git-” 으로 시작하기 때문에 아래와 같이 간단한 이름으로 설정해서 사용할 수 있다.
+$ git config --global credential.helper 'read-only --file
+/mnt/shared/creds'
+이렇게 살펴본 대로 Credential 저장소를 필요에 따라 맞춤 프로그램을 작성해서 확장하는 것이 어렵지 않다. 스크립트를
+만들어 사용자나 팀의 가려운 부분을 긁어줄 수 있다.
+요약
+커밋과 저장소를 꼼꼼하게 관리하는 도구를 살펴보았다. 문제가 생기면 바로 누가, 언제, 무엇을 했는지 찾아내야 한다.
+그리고 프로젝트를 쪼개고 싶을 때 사용하는 방법들도 배웠다. 이제 Git 명령은 거의 모두 배운 것이다. 독자들이 하루빨리
+익숙해져서 자유롭게 사용했으면 좋겠다.
+330
