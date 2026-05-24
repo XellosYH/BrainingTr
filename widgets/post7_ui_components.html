@@ -1,0 +1,477 @@
+<!-- post7_ui_components.html
+     design_ui 에이전트 v1.7 | brain_health_1.0 | 2026-05-23
+     요청 #2: 차례 구분 시각화 + 요청 #3: 획득 패 정렬 레이아웃
+     game 에이전트 전달용 — style은 minify 후 단일행으로 WP 업로드 필수
+-->
+
+<!-- ============================================================
+     요청 #2: 차례 구분 시각화 컴포넌트
+     적용 대상: BH_hand_zone (플레이어), BH_ai_zone (AI)
+     상태 클래스: BH_my_turn / BH_opponent_turn (BH_game_board에 추가)
+     ============================================================ -->
+
+<style>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   요청 #2: 차례 구분 시각화 CSS
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* 차례 전환 transition 공통 — 0.3s */
+.BH_hand_zone,
+.BH_ai_zone,
+.BH_turn_info {
+  transition: background 0.3s ease, border-color 0.3s ease,
+              font-size 0.3s ease, color 0.3s ease, opacity 0.3s ease;
+}
+
+/* ─── 내 차례 상태 (.BH_my_turn → BH_game_board에 추가) ─── */
+
+/* 내 손패 영역: 밝은 민트 강조 배경 + 선명한 테두리 */
+.BH_my_turn .BH_hand_zone {
+  background: rgba(46, 125, 82, 0.18) !important;
+  border: 2px solid #2E7D52 !important;
+  box-shadow: 0 0 0 3px rgba(46, 125, 82, 0.15) !important;
+}
+
+/* AI 영역: 어둡게 dim 처리 */
+.BH_my_turn .BH_ai_zone {
+  background: rgba(0, 0, 0, 0.04) !important;
+  opacity: 0.55 !important;
+  border: 1.5px dashed #c8e6d0 !important;
+}
+
+/* 차례 텍스트: 내 차례 시 크기 + 색상 강조 */
+.BH_my_turn .BH_turn_info {
+  font-size: 20px !important;
+  color: #1a4a2e !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.3px !important;
+  text-shadow: 0 1px 2px rgba(46, 125, 82, 0.2) !important;
+}
+
+/* ─── 상대(AI) 차례 상태 (.BH_opponent_turn → BH_game_board에 추가) ─── */
+
+/* AI 영역: 밝은 청록 강조 배경 */
+.BH_opponent_turn .BH_ai_zone {
+  background: rgba(0, 188, 212, 0.12) !important;
+  border: 2px solid #00BCD4 !important;
+  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.12) !important;
+  opacity: 1 !important;
+}
+
+/* 내 손패 영역: dim 처리 — 클릭 안 된다는 시각적 신호 */
+.BH_opponent_turn .BH_hand_zone {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border: 1.5px dashed #c8e6d0 !important;
+  box-shadow: none !important;
+}
+
+/* 내 손패 카드: 살짝 어둡게 */
+.BH_opponent_turn .BH_hand_zone .BH_card {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* 차례 텍스트: AI 차례 시 청록 색상 강조 */
+.BH_opponent_turn .BH_turn_info {
+  font-size: 18px !important;
+  color: #006979 !important;
+  font-weight: 700 !important;
+}
+
+/* ─── 차례 전환 시 BH_turn_info 위 펄스 표시기 ─── */
+/* 내 차례 → 왼쪽 초록 마커 / AI 차례 → 오른쪽 청록 마커 */
+.BH_turn_indicator {
+  display: inline-block !important;
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  margin-right: 6px !important;
+  vertical-align: middle !important;
+  animation: BH_turnPulse 1s ease-in-out infinite !important;
+}
+.BH_my_turn .BH_turn_indicator {
+  background: #2E7D52 !important;
+}
+.BH_opponent_turn .BH_turn_indicator {
+  background: #00BCD4 !important;
+}
+@keyframes BH_turnPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+</style>
+
+
+<!-- ============================================================
+     요청 #3: 획득 패 정렬 레이아웃 컴포넌트
+     기존 .BH_captured_zone을 4구역(광/십끗/오끗/피)으로 교체
+     ============================================================ -->
+
+<style>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   요청 #3: 획득 패 4구역 정렬 CSS
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* 획득 패 전체 컨테이너 — 기존 .BH_captured_zone 대체 */
+.BH_captured_grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 4px !important;
+  margin-bottom: 8px !important;
+  padding: 6px !important;
+  background: rgba(255, 215, 0, 0.07) !important;
+  border-radius: 10px !important;
+  border: 1.5px solid #e8d87a !important;
+}
+
+/* 각 구역 공통 */
+.BH_cap_section {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 3px !important;
+  padding: 4px 3px !important;
+  border-radius: 7px !important;
+  min-height: 72px !important;
+}
+
+/* 구역 배경 — 구역별 색상 구분 */
+.BH_cap_gwang {
+  background: linear-gradient(180deg, rgba(244, 196, 48, 0.18), rgba(255,255,255,0.0)) !important;
+  border: 1px solid rgba(244, 196, 48, 0.4) !important;
+}
+.BH_cap_yeol {
+  background: linear-gradient(180deg, rgba(46, 125, 82, 0.12), rgba(255,255,255,0.0)) !important;
+  border: 1px solid rgba(46, 125, 82, 0.3) !important;
+}
+.BH_cap_ddi {
+  background: linear-gradient(180deg, rgba(0, 188, 212, 0.10), rgba(255,255,255,0.0)) !important;
+  border: 1px solid rgba(0, 188, 212, 0.3) !important;
+}
+.BH_cap_pi {
+  background: linear-gradient(180deg, rgba(176, 190, 197, 0.15), rgba(255,255,255,0.0)) !important;
+  border: 1px solid rgba(176, 190, 197, 0.4) !important;
+}
+
+/* 구역 라벨 */
+.BH_cap_label {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.2px !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  margin-bottom: 2px !important;
+  white-space: nowrap !important;
+}
+.BH_cap_gwang .BH_cap_label {
+  color: #7a5000 !important;
+  background: rgba(244, 196, 48, 0.3) !important;
+}
+.BH_cap_yeol .BH_cap_label {
+  color: #1a4a2e !important;
+  background: rgba(46, 125, 82, 0.15) !important;
+}
+.BH_cap_ddi .BH_cap_label {
+  color: #005662 !important;
+  background: rgba(0, 188, 212, 0.15) !important;
+}
+.BH_cap_pi .BH_cap_label {
+  color: #37474f !important;
+  background: rgba(176, 190, 197, 0.3) !important;
+}
+
+/* 구역 내 카드 목록 래퍼 */
+.BH_cap_cards {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 2px !important;
+  justify-content: center !important;
+  align-content: flex-start !important;
+  flex: 1 !important;
+  width: 100% !important;
+}
+
+/* 획득 패 카드 — 손패보다 작은 사이즈 (확인용) */
+.BH_card_cap {
+  width: 28px !important;
+  height: 40px !important;
+  border-radius: 4px !important;
+  border: 1.5px solid #b2d8be !important;
+  background: #fff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  cursor: default !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.10) !important;
+  position: relative !important;
+}
+.BH_card_cap img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 3px !important;
+  display: block !important;
+}
+/* 광 카드 강조 테두리 */
+.BH_card_cap.BH_cap_gwang_card {
+  border-color: #F4C430 !important;
+  box-shadow: 0 0 0 1.5px rgba(244,196,48,0.5) !important;
+}
+
+/* 구역 카드 수 표시 배지 */
+.BH_cap_count {
+  font-size: 11px !important;
+  color: #666 !important;
+  font-weight: 600 !important;
+  min-height: 14px !important;
+  text-align: center !important;
+}
+
+/* 빈 구역 안내 */
+.BH_cap_empty {
+  font-size: 11px !important;
+  color: #bbb !important;
+  text-align: center !important;
+  margin: auto !important;
+  padding: 6px 0 !important;
+}
+
+/* 모바일 375px 이하: 2열 배치로 전환 */
+@media (max-width: 375px) {
+  .BH_captured_grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 4px !important;
+  }
+}
+</style>
+
+
+<!-- ============================================================
+     획득 패 4구역 HTML 구조
+     (기존 <div class="BH_captured_zone" id="BH_captured_zone"> 교체)
+     ============================================================ -->
+
+<div class="BH_captured_grid" id="BH_captured_zone" aria-label="획득 카드">
+
+  <!-- 광 구역 -->
+  <div class="BH_cap_section BH_cap_gwang">
+    <span class="BH_cap_label">광</span>
+    <div class="BH_cap_cards" id="BH_cap_gwang_cards">
+      <span class="BH_cap_empty">-</span>
+    </div>
+    <span class="BH_cap_count" id="BH_cap_gwang_count"></span>
+  </div>
+
+  <!-- 십끗(열끗/조) 구역 -->
+  <div class="BH_cap_section BH_cap_yeol">
+    <span class="BH_cap_label">십끗</span>
+    <div class="BH_cap_cards" id="BH_cap_yeol_cards">
+      <span class="BH_cap_empty">-</span>
+    </div>
+    <span class="BH_cap_count" id="BH_cap_yeol_count"></span>
+  </div>
+
+  <!-- 오끗(띠/단) 구역 -->
+  <div class="BH_cap_section BH_cap_ddi">
+    <span class="BH_cap_label">오끗</span>
+    <div class="BH_cap_cards" id="BH_cap_ddi_cards">
+      <span class="BH_cap_empty">-</span>
+    </div>
+    <span class="BH_cap_count" id="BH_cap_ddi_count"></span>
+  </div>
+
+  <!-- 피 구역 -->
+  <div class="BH_cap_section BH_cap_pi">
+    <span class="BH_cap_label">피</span>
+    <div class="BH_cap_cards" id="BH_cap_pi_cards">
+      <span class="BH_cap_empty">-</span>
+    </div>
+    <span class="BH_cap_count" id="BH_cap_pi_count"></span>
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     BH_turn_info HTML 수정 (차례 펄스 표시기 포함)
+     기존 <div class="BH_turn_info" id="BH_turn_info"> 교체
+     ============================================================ -->
+
+<div class="BH_turn_info" id="BH_turn_info" aria-live="polite">
+  <span class="BH_turn_indicator" id="BH_turn_indicator" aria-hidden="true"></span>
+  <span id="BH_turn_text">내 차례</span>
+</div>
+
+
+<!-- ============================================================
+     game 에이전트 JS 연동 가이드
+     아래 JS는 WP 업로드용 위젯에 직접 병합 필요 (minify 후)
+     ============================================================ -->
+
+<script>
+/*
+  ── 요청 #2: 차례 구분 JS 연동 ──────────────────────────────
+
+  기존 BH_setPhase() 함수에서 아래 BH_updateTurnUI() 호출 추가.
+  game 에이전트가 기존 BH_setPhase 내부에 아래 1줄 삽입:
+    BH_updateTurnUI(p);
+
+  또는 BH_setPhase 전체를 아래 버전으로 교체:
+*/
+function BH_setPhase_NEW(p) {
+  BH_GS.phase = p;
+  // 기존 turn_info 텍스트 업데이트
+  var ti = document.getElementById('BH_turn_text');
+  if (ti) {
+    if (p === 'PLAYER_TURN') ti.textContent = '내 차례';
+    else if (p === 'AI_TURN') ti.textContent = 'AI 차례...';
+    else if (p === 'GAME_OVER') ti.textContent = '게임 종료';
+  }
+  // 차례 구분 시각화 클래스 전환
+  BH_updateTurnUI(p);
+}
+
+/*
+  BH_updateTurnUI: BH_game_board에 상태 클래스 전환
+  — 0.3s CSS transition이 자동 처리함
+*/
+function BH_updateTurnUI(phase) {
+  var gb = document.getElementById('BH_game_board');
+  if (!gb) return;
+  gb.classList.remove('BH_my_turn', 'BH_opponent_turn');
+  if (phase === 'PLAYER_TURN') {
+    gb.classList.add('BH_my_turn');
+  } else if (phase === 'AI_TURN') {
+    gb.classList.add('BH_opponent_turn');
+  }
+}
+
+/*
+  ── 요청 #3: 획득 패 4구역 렌더링 JS 연동 ─────────────────
+
+  기존 BH_renderCaptured() 함수를 아래로 교체.
+  카드 타입 매핑:
+    gwang  → 광 구역
+    jo     → 십끗(열끗) 구역  (기존 BH_DECK_DATA의 type='jo')
+    dan    → 오끗(띠) 구역    (type='dan')
+    pi     → 피 구역           (type='pi')
+    yul    → 오끗 구역 포함    (type='yul' — 12월 단)
+*/
+function BH_renderCaptured_NEW() {
+  // ── 구역별 ID 맵
+  var sectionMap = {
+    gwang: 'BH_cap_gwang_cards',
+    jo:    'BH_cap_yeol_cards',
+    dan:   'BH_cap_ddi_cards',
+    yul:   'BH_cap_ddi_cards',
+    pi:    'BH_cap_pi_cards'
+  };
+  var countMap = {
+    gwang: 'BH_cap_gwang_count',
+    jo:    'BH_cap_yeol_count',
+    dan:   'BH_cap_ddi_count',
+    yul:   'BH_cap_ddi_count',
+    pi:    'BH_cap_pi_count'
+  };
+
+  // ── 구역 초기화
+  var ids = ['BH_cap_gwang_cards','BH_cap_yeol_cards','BH_cap_ddi_cards','BH_cap_pi_cards'];
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+
+  // ── 카드 삽입
+  var counts = { gwang:0, jo:0, dan:0, yul:0, pi:0 };
+  BH_GS.playerCaptured.forEach(function(card) {
+    var type = card.type || 'pi';
+    var zoneId = sectionMap[type] || 'BH_cap_pi_cards';
+    var zone = document.getElementById(zoneId);
+    if (!zone) return;
+
+    // BH_card_cap 요소 생성
+    var d = document.createElement('div');
+    d.className = 'BH_card_cap' + (type === 'gwang' ? ' BH_cap_gwang_card' : '');
+    d.setAttribute('aria-label', card.name);
+    d.title = card.name;
+
+    if (card.svgUrl) {
+      var img = document.createElement('img');
+      img.src = card.svgUrl;
+      img.alt = card.name;
+      d.appendChild(img);
+    } else {
+      d.textContent = card.emoji || '';
+    }
+    zone.appendChild(d);
+    if (counts[type] !== undefined) counts[type]++;
+  });
+
+  // ── 빈 구역 안내 + 개수 표시
+  var typeGroups = [
+    { type: 'gwang', cardsId: 'BH_cap_gwang_cards', countId: 'BH_cap_gwang_count' },
+    { type: 'jo',    cardsId: 'BH_cap_yeol_cards',  countId: 'BH_cap_yeol_count' },
+    { type: 'dan',   cardsId: 'BH_cap_ddi_cards',   countId: 'BH_cap_ddi_count' },
+    { type: 'pi',    cardsId: 'BH_cap_pi_cards',    countId: 'BH_cap_pi_count'  }
+  ];
+  // dan+yul 합산
+  counts.dan += counts.yul;
+
+  typeGroups.forEach(function(g) {
+    var zone = document.getElementById(g.cardsId);
+    var cntEl = document.getElementById(g.countId);
+    if (zone && zone.children.length === 0) {
+      var empty = document.createElement('span');
+      empty.className = 'BH_cap_empty';
+      empty.textContent = '-';
+      zone.appendChild(empty);
+    }
+    if (cntEl) {
+      var n = counts[g.type] || 0;
+      cntEl.textContent = n > 0 ? n + '장' : '';
+    }
+  });
+
+  // ── 기존 점수판 counts 텍스트 업데이트 유지
+  var cnt = document.getElementById('BH_my_counts');
+  if (cnt) {
+    var gc = BH_GS.playerCaptured.filter(function(c){ return c.type==='gwang'; }).length;
+    var jc = BH_GS.playerCaptured.filter(function(c){ return c.type==='jo'; }).length;
+    var pc = BH_GS.playerCaptured.filter(function(c){ return c.type==='pi'; }).length;
+    cnt.textContent = '광' + gc + ' 조' + jc + ' 피' + pc;
+  }
+}
+
+/*
+  ── 초기 상태 적용 (게임 시작 시 BH_setPhase('PLAYER_TURN') 호출 시 자동 처리)
+
+  game 에이전트 체크리스트:
+  [1] BH_setPhase → BH_setPhase_NEW 로 교체 (또는 내부에 BH_updateTurnUI 추가)
+  [2] BH_renderCaptured → BH_renderCaptured_NEW 로 교체
+  [3] BH_turn_info HTML에 BH_turn_indicator + BH_turn_text span 추가
+  [4] BH_captured_zone HTML을 BH_captured_grid 구조로 교체
+  [5] CSS 두 블록 모두 style 섹션에 추가 (기존 CSS 유지 + 추가)
+*/
+</script>
+
+
+<!-- ============================================================
+     납품 전 자가 점검 (design_ui QA)
+     ============================================================
+
+  □ 도박 연상 아이콘/텍스트/색상 0건? ✅ (청록·초록 계열만)
+  □ 결과 화면 면책고지 포함? ✅ (기존 위젯에 존재, 본 컴포넌트는 face 아님)
+  □ 색상 청록·그린 중심? ✅
+  □ 버튼 "CASH","BET","WIN MONEY" 없음? ✅
+  □ 인지 훈련 성취 언어 사용? ✅ (광/십끗/오끗/피 명칭 — 전통 명칭)
+  □ 차례 전환 transition 0.3s? ✅
+  □ 손패 dim 시 pointer-events none? ✅ (상대 차례 시 클릭 차단)
+  □ 모바일 375px 대응? ✅ (2열 전환)
+  □ 시니어 가독성 차례 텍스트 20px+? ✅ (.BH_my_turn .BH_turn_info 20px)
+  □ BH_ prefix 전 id·class·keyframe? ✅
+  □ !important 방어? ✅ (전체 적용)
+  □ 획득 구역 ARIA label? ✅ (aria-label="획득 카드")
+
+-->
