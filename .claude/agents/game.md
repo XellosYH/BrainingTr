@@ -6,7 +6,7 @@ model: claude-sonnet-4-6
 
 # 🎮 게임 에이전트
 
-**버전**: v3.45 — 로컬 HTML 검증 절차 신설 (2026-05-25)
+**버전**: v3.46 — 정본 코드 동기화 8건 현행화 (2026-05-25)
 ---
 
 ## 🔴 로컬 HTML 검증 절차 (★ v3.45 신설 — 2026-05-25)
@@ -64,9 +64,9 @@ dm.style.display = ''; // BH_startAutoTimer() 호출 없음
 
 | # | 항목 | 심각도 | 개선 방법 |
 |---|---|---|---|
-| B1 | `BH_confirmNewGame()`의 `confirm()` 팝업 | 보통 | native `confirm()` → 커스텀 인라인 확인 모달로 교체 (모바일 UX 개선) |
+| B1 | `BH_confirmNewGame()`의 `confirm()` 팝업 | 보통 | native `confirm()` → 커스텀 인라인 확인 모달로 교체 (모바일 UX 개선) — ⚠️ 보류: confirm() 정본 잔존. 모바일 UX 사이클에서 처리 (★ v3.46 현행화) |
 | B2 | `.BH_card` 접근성 미구현 | 낮음 | `role="button"` + `tabindex="0"` 추가 (시니어 키보드 접근성) |
-| B3 | 게임 방법 패널 + 자동 타이머 충돌 | 낮음 | `BH_how_panel` 열려있으면 `BH_startAutoTimer()` 일시 중지 |
+| B3 | 게임 방법 패널 + 자동 타이머 충돌 | 낮음 | `BH_how_panel` 열려있으면 `BH_startAutoTimer()` 일시 중지 (자동 타이머 제거 후 해당 없음) |
 
 > ⚠️ B1~B3는 서비스 치명적이지 않음 — 오너 지시 시 수정 착수
 
@@ -154,8 +154,10 @@ dm.style.display = ''; // BH_startAutoTimer() 호출 없음
 
 **빠른 검증 스크립트**:
 ```js
-// typeof 확인
-typeof BH_startWithDiff  // 'function' 이면 정상
+// typeof 확인 — 함수명은 포스트마다 다름. game_planner 기획서 [검수 식별자] 항목에서 확인.
+// Post #7 민화투 기준:
+typeof BH_showDifficultyModal  // 'function' 이면 정상
+// ★ v3.46 현행화 (2026-05-25): BH_startWithDiff → BH_showDifficultyModal 정정 (정본 실측)
 ```
 
 **PATCH 오염 시**: dev 에이전트에 CharSum 세그먼트 디버깅 기법 적용 요청 → 타겟 PATCH 수정.
@@ -816,100 +818,56 @@ var tool = '<!-- wp:html -->' +
 
 ## 🀄 화투 패 JS 데이터 모델 (표준 확정)
 
+> ★ v3.45 → v3.46 현행화 (2026-05-25): 정본 코드 동기화 — yeol→jo, ddi→dan, ribbon/special 폐기, emoji/svgUrl/label/bg 추가
+
 > game 에이전트가 민화투 구현 시 이 구조를 **그대로** 사용. 임의 변경 금지.
 
 ```javascript
-// ★ 화투 패 48장 완전 데이터 구조
-// type: 'gwang'(광20) | 'yeol'(열끗10) | 'ddi'(띠5) | 'pi'(피0) | 'ssangpi'(쌍피2)
-// ribbon: 'hong'(홍띠) | 'cho'(초띠) | 'cheong'(청띠) | null
-// special: 'godori'(고도리 새) | null
+// ★ 화투 패 48장 완전 데이터 구조 (v3.46 현행화 — 정본 post7_widget.html 실측 기준)
+// type: 'gwang'(광) | 'jo'(조/열끗) | 'dan'(단/띠) | 'pi'(피)
+//   ※ 구버전 표기 yeol→jo, ddi→dan, ssangpi 폐기
+// 필드: {id, month, type, name, emoji, svgUrl, label, bg}
+//   ※ 구버전 필드 ribbon/special 폐기 — 족보 판정은 type+month 직접 계산 방식으로 대체
 
-var BH_DECK_DATA = [
-  // 1월 솔·학
-  {id:'m01_gwang', month:1, type:'gwang',  value:20, label:'1월 광',  ribbon:null,    special:null},
-  {id:'m01_ddi',   month:1, type:'ddi',    value:5,  label:'1월 홍띠', ribbon:'hong',  special:null},
-  {id:'m01_pi1',   month:1, type:'pi',     value:0,  label:'1월 피',   ribbon:null,    special:null},
-  {id:'m01_pi2',   month:1, type:'pi',     value:0,  label:'1월 피',   ribbon:null,    special:null},
-  // 2월 매화
-  {id:'m02_yeol',  month:2, type:'yeol',   value:10, label:'2월 열끗', ribbon:null,    special:'godori'},
-  {id:'m02_ddi',   month:2, type:'ddi',    value:5,  label:'2월 홍띠', ribbon:'hong',  special:null},
-  {id:'m02_pi1',   month:2, type:'pi',     value:0,  label:'2월 피',   ribbon:null,    special:null},
-  {id:'m02_pi2',   month:2, type:'pi',     value:0,  label:'2월 피',   ribbon:null,    special:null},
-  // 3월 벚꽃
-  {id:'m03_gwang', month:3, type:'gwang',  value:20, label:'3월 광',   ribbon:null,    special:null},
-  {id:'m03_ddi',   month:3, type:'ddi',    value:5,  label:'3월 홍띠', ribbon:'hong',  special:null},
-  {id:'m03_pi1',   month:3, type:'pi',     value:0,  label:'3월 피',   ribbon:null,    special:null},
-  {id:'m03_pi2',   month:3, type:'pi',     value:0,  label:'3월 피',   ribbon:null,    special:null},
-  // 4월 흑싸리
-  {id:'m04_yeol',  month:4, type:'yeol',   value:10, label:'4월 열끗', ribbon:null,    special:'godori'},
-  {id:'m04_ddi',   month:4, type:'ddi',    value:5,  label:'4월 초띠', ribbon:'cho',   special:null},
-  {id:'m04_pi1',   month:4, type:'pi',     value:0,  label:'4월 피',   ribbon:null,    special:null},
-  {id:'m04_pi2',   month:4, type:'pi',     value:0,  label:'4월 피',   ribbon:null,    special:null},
-  // 5월 난초
-  {id:'m05_yeol',  month:5, type:'yeol',   value:10, label:'5월 열끗', ribbon:null,    special:null},
-  {id:'m05_ddi',   month:5, type:'ddi',    value:5,  label:'5월 초띠', ribbon:'cho',   special:null},
-  {id:'m05_pi1',   month:5, type:'pi',     value:0,  label:'5월 피',   ribbon:null,    special:null},
-  {id:'m05_pi2',   month:5, type:'pi',     value:0,  label:'5월 피',   ribbon:null,    special:null},
-  // 6월 모란
-  {id:'m06_yeol',  month:6, type:'yeol',   value:10, label:'6월 열끗', ribbon:null,    special:null},
-  {id:'m06_ddi',   month:6, type:'ddi',    value:5,  label:'6월 초띠', ribbon:'cho',   special:null},
-  {id:'m06_pi1',   month:6, type:'pi',     value:0,  label:'6월 피',   ribbon:null,    special:null},
-  {id:'m06_pi2',   month:6, type:'pi',     value:0,  label:'6월 피',   ribbon:null,    special:null},
-  // 7월 홍싸리
-  {id:'m07_yeol',  month:7, type:'yeol',   value:10, label:'7월 열끗', ribbon:null,    special:null},
-  {id:'m07_ddi',   month:7, type:'ddi',    value:5,  label:'7월 청띠', ribbon:'cheong',special:null},
-  {id:'m07_pi1',   month:7, type:'pi',     value:0,  label:'7월 피',   ribbon:null,    special:null},
-  {id:'m07_pi2',   month:7, type:'pi',     value:0,  label:'7월 피',   ribbon:null,    special:null},
-  // 8월 공산명월
-  {id:'m08_gwang', month:8, type:'gwang',  value:20, label:'8월 광',   ribbon:null,    special:null},
-  {id:'m08_yeol',  month:8, type:'yeol',   value:10, label:'8월 열끗', ribbon:null,    special:'godori'},
-  {id:'m08_pi1',   month:8, type:'pi',     value:0,  label:'8월 피',   ribbon:null,    special:null},
-  {id:'m08_pi2',   month:8, type:'pi',     value:0,  label:'8월 피',   ribbon:null,    special:null},
-  // 9월 국화
-  {id:'m09_yeol',  month:9, type:'yeol',   value:10, label:'9월 열끗', ribbon:null,    special:null},
-  {id:'m09_ddi',   month:9, type:'ddi',    value:5,  label:'9월 청띠', ribbon:'cheong',special:null},
-  {id:'m09_pi1',   month:9, type:'pi',     value:0,  label:'9월 피',   ribbon:null,    special:null},
-  {id:'m09_pi2',   month:9, type:'pi',     value:0,  label:'9월 피',   ribbon:null,    special:null},
-  // 10월 단풍
-  {id:'m10_yeol',  month:10,type:'yeol',   value:10, label:'10월 열끗',ribbon:null,    special:null},
-  {id:'m10_ddi',   month:10,type:'ddi',    value:5,  label:'10월 청띠',ribbon:'cheong',special:null},
-  {id:'m10_pi1',   month:10,type:'pi',     value:0,  label:'10월 피',  ribbon:null,    special:null},
-  {id:'m10_pi2',   month:10,type:'pi',     value:0,  label:'10월 피',  ribbon:null,    special:null},
-  // 11월 오동
-  {id:'m11_gwang', month:11,type:'gwang',  value:20, label:'11월 광',  ribbon:null,    special:null},
-  {id:'m11_pi1',   month:11,type:'pi',     value:0,  label:'11월 피',  ribbon:null,    special:null},
-  {id:'m11_pi2',   month:11,type:'pi',     value:0,  label:'11월 피',  ribbon:null,    special:null},
-  {id:'m11_pi3',   month:11,type:'pi',     value:0,  label:'11월 피',  ribbon:null,    special:null},
-  // 12월 비
-  {id:'m12_gwang', month:12,type:'gwang',  value:20, label:'12월 광',  ribbon:null,    special:null},
-  {id:'m12_yeol',  month:12,type:'yeol',   value:10, label:'12월 열끗',ribbon:null,    special:null},
-  {id:'m12_ddi',   month:12,type:'ddi',    value:5,  label:'12월 청띠',ribbon:'cheong',special:null},
-  {id:'m12_ssang', month:12,type:'ssangpi',value:2,  label:'12월 쌍피',ribbon:null,    special:null},
-];
+// 예시 (전체 48장은 실제 BH_DECK_DATA base64 JSON 참조):
+// {id:'m01_dan',  month:1,  type:'dan',  name:'1월 홍띠', emoji:'...', svgUrl:'...', label:'1월', bg:'...'}
+// {id:'m01_gwang',month:1,  type:'gwang',name:'1월 광',   emoji:'...', svgUrl:'...', label:'1월', bg:'...'}
+// {id:'m01_pi1',  month:1,  type:'pi',   name:'1월 피1',  emoji:'...', svgUrl:'...', label:'1월', bg:'...'}
+// {id:'m02_jo',   month:2,  type:'jo',   name:'2월 조',   emoji:'...', svgUrl:'...', label:'2월', bg:'...'}
+
+var BH_DECK_DATA = JSON.parse(/* base64 UTF-8 인코딩 JSON 배열 — 위젯 내 atob/TextDecoder 패턴 사용 */);
 // 검증: BH_DECK_DATA.length === 48 ← 반드시 확인
+// 타입별 카운트: gwang=5, jo=9, dan=10, pi=24 (11월 pi 3장 포함)
 ```
+
+> ⚠️ 구버전 game.md v3.24의 yeol/ddi/ssangpi 타입 및 ribbon/special 필드는 정본에서 제거됨. 신규 게임 구현 시 jo/dan 타입 사용 필수.
 
 ---
 
 ## 🧠 민화투 게임 상태 모델
 
 ```javascript
-// ★ 게임 전체 상태 — 단일 객체로 관리
+// ★ 게임 전체 상태 — 단일 객체로 관리 (v3.46 현행화 — 정본 post7_widget.html 실측 기준)
+// ★ v3.45 → v3.46 현행화 (2026-05-25): playerCap→playerCaptured, aiCap→aiCaptured, turn 제거, phase 4상태로 현행화, hintUsed/hintCount/turnCount/gameOver 추가
 var BH_GS = {
-  deck:        [],   // 남은 더미 (배열 앞이 맨 위)
-  floor:       [],   // 바닥패 (월별 그룹: {month, cards[]})
-  playerHand:  [],   // 플레이어 손패
-  aiHand:      [],   // AI 손패 (플레이어에게 비공개)
-  playerCap:   [],   // 플레이어 획득 패
-  aiCap:       [],   // AI 획득 패
-  turn:        'player',    // 'player' | 'ai'
-  phase:       'select',    // 'select'(손패 선택) | 'flip'(더미 뒤집기) | 'result'
-  difficulty:  'normal',    // 'easy' | 'normal' | 'hard'
-  selectedCard: null,       // 현재 선택된 손패 카드 id
+  phase:         'IDLE',     // 'IDLE' | 'PLAYER_TURN' | 'AI_TURN' | 'ANIMATING'
+  deck:          [],         // 남은 더미
+  playerHand:    [],         // 플레이어 손패
+  aiHand:        [],         // AI 손패
+  floor:         [],         // 바닥패
+  playerCaptured:[],         // 플레이어 획득 패 (구버전 playerCap 폐기)
+  aiCaptured:    [],         // AI 획득 패 (구버전 aiCap 폐기)
+  selectedCard:  null,
+  deckFlipped:   null,
+  difficulty:    'normal',
+  hintUsed:      false,
+  hintCount:     0,
+  turnCount:     0,
+  gameOver:      false,
 };
 
-// ★ 점수 계산 함수 시그니처 (구현 시 참고)
-// BH_calcScore(capturedCards) → { gwang, yeol, ddi, jokbo, total }
+// ★ 점수 계산 함수 시그니처 (v3.46 현행화 — 정본 BH_calcScore 실측 기준)
+// BH_calcScore(capturedCards) → { gwang, jo, dan, jokbo, total }   (구버전 yeol→jo, ddi→dan)
 // BH_checkJokbo(capturedCards) → { hongdan, chodan, cheongdan, godori }
 ```
 
@@ -931,7 +889,7 @@ function BH_aiMoveEasy(hand, floor) {
 ```javascript
 function BH_aiMoveNormal(hand, floor) {
   // 우선순위: 광 짝 > 열끗 짝 > 띠 짝 > 피 짝 > 무작위
-  var priority = ['gwang','yeol','ddi','pi','ssangpi'];
+  var priority = ['gwang','jo','dan','pi'];  // v3.46 현행화: yeol→jo, ddi→dan, ssangpi 폐기
   for (var i = 0; i < priority.length; i++) {
     var type = priority[i];
     var card = hand.find(c => c.type === type && floor.some(f => f.month === c.month));
@@ -941,19 +899,17 @@ function BH_aiMoveNormal(hand, floor) {
 }
 ```
 
-### 어려움 (Hard) — Expectiminimax (깊이 2)
-```
-노드 구조:
-  MAX  노드 = AI 손패 선택 (가장 높은 기댓값 선택)
-  CHANCE 노드 = 더미 뒤집기 (모든 남은 패에 균등 확률)
-  MIN  노드 = 플레이어 최선 대응 (AI 기준 최솟값)
+### 어려움 (Hard) — 휴리스틱 + 족보(jokbo) 보너스 가산
 
-평가 함수: eval(state) = AI총점 - 플레이어총점 + 족보보너스
-깊이 제한: 2턴 (성능·복잡도 균형)
-```
+> ★ v3.46 현행화 (2026-05-25): Expectiminimax 미구현. 정본은 그리디 휴리스틱 + jokbo 보너스 방식.
 
-> ⚠️ 어려움 모드 구현 주의: 더미 카드가 많을수록 CHANCE 분기 폭발 → 깊이 2, 샘플링 5장 제한
+정본 `BH_aiSelectCard` 실측 알고리즘:
+1. 손패 중 바닥과 짝 맞는 카드 우선 선택
+2. 짝 카드 중 jokbo(고도리/홍단/초단/청단/이노시카초 등) 완성/근접 카드에 보너스 가산
+3. 동점 시 type 우선순위: gwang > jo > dan > pi
+4. 짝 없으면 가장 낮은 가치 카드 버림 (피 우선)
 
+성능 트레이드오프: 깊이 탐색 미실행 → 응답 빠름·예측 단순. 향후 강화 사이클에서 Expectiminimax/MCTS 재검토.
 ---
 
 ## 📐 민화투 화면 구성 (레이아웃 설계)
@@ -975,7 +931,7 @@ function BH_aiMoveNormal(hand, floor) {
 ```
 
 **카드 크기 (시니어 UX)**:
-- 손패 카드: 60×90px (최소) / 80×120px (권장)
+- 손패 카드: 60×84px 이상 / 80×120px (권장) — ★ v3.46 현행화 (정본 84px 실측 기준)
 - 바닥패 카드: 50×75px (공간 절약)
 - 카드 한글 라벨: 14px (카드 하단)
 
@@ -992,6 +948,8 @@ function BH_aiMoveNormal(hand, floor) {
 ---
 
 ## 🔄 FSM 게임 상태 머신 (Finite State Machine) ★ v3.25 신설
+
+> ★ 2026-05-25 FSM 통합 라이브 사고 후 정본은 BH_GS.phase 직접 제어 방식으로 안정화. 실제 사용 phase: {IDLE, PLAYER_TURN, AI_TURN, ANIMATING} 4종. 아래 7상태 BH_FSM 객체는 미구현 — 향후 신중 재검토 영역. ★ v3.46 (2026-05-25)
 
 **민화투 게임 상태 7종 전이표**
 
@@ -1081,6 +1039,8 @@ function BH_initDrag(cardEl, cardId) {
 ## 🃏 민화투 족보 완전 계산 함수 ★ v3.25 신설
 
 **족보 6종 + 점수 뺏기 로직**
+
+> ⚠️ 참조용 보존 — 아래 ribbon 기반 족보 판정은 v3.25 사양. 정본 위젯은 type+month 직접 계산 방식으로 다르게 구현. 신규 게임 구현 시 정본 BH_getJokboList 패턴 참조 권장. ★ v3.46 (2026-05-25)
 
 ```javascript
 // 민화투 족보 체계 (게임 종료 시 계산)
@@ -1224,6 +1184,8 @@ function BH_flipCard(cardEl, onFlipped) {
 
 ## 🎯 Expectiminimax 상세 구현 ★ v3.25 신설
 
+> ⚠️ 보류 — 향후 성능 개선 사이클에서 재검토. 현재 정본은 휴리스틱+jokbo 보너스 방식으로 구현됨. 아래 사양은 참조용으로 보존. ★ v3.46 (2026-05-25)
+
 ```javascript
 // Expectiminimax — 깊이 2, CHANCE 노드 샘플링 5장 제한
 function BH_expectiminimax(state, depth, isMax) {
@@ -1282,7 +1244,7 @@ function BH_evalState(state) {
 | 본문 폰트 | 16px | 18px | 고령자 시력 고려 |
 | 카드 라벨 | 14px | 16px | 카드 하단 월 표기 |
 | 색상 대비 | 4.5:1 | 7:1 | WCAG AA→AAA |
-| 카드 크기(손패) | 60×90px | 80×120px | 손가락 터치 편의 |
+| 카드 크기(손패) | 60×84px 이상 (시니어 UX 검수 허용), 60×90px 권장 | 80×120px | ★ v3.46 현행화: 정본 60×84px 실측 기준 완화 |
 | 애니메이션 속도 | 300ms | 400ms | 너무 빠르면 혼란 |
 | 힌트 표시 | 쉬움 모드 | 짝 카드 테두리 강조 | 인지 부하 감소 |
 | 효과음 기본값 | ON | 뮤트 버튼 상시 노출 | 청각 피드백 중요 |
@@ -1291,6 +1253,8 @@ function BH_evalState(state) {
 ---
 
 ## 💾 localStorage 게임 저장/불러오기 ★ v3.26 신설
+
+> ⚠️ 참조용 보존 — 아래 localStorage 사양은 v3.26 (BH_GS.playerCap/aiCap 표기). 정본 v3.46은 playerCaptured/aiCaptured 사용. 신규 게임 구현 시 정본 사양 우선. ★ v3.46  (2026-05-25)
 
 ```javascript
 // 저장 키 네임스페이스
@@ -1377,6 +1341,8 @@ function BH_loadStats() {
 ---
 
 ## 🤖 MCTS (Monte Carlo Tree Search) — Hard 모드 대안 ★ v3.26 신설
+
+> ⚠️ 보류 — 정본 미구현. Expectiminimax 대안으로 v3.26에 제안됨. 향후 강화 사이클 대상. ★ v3.46 (2026-05-25)
 
 **Expectiminimax 깊이 2보다 실전적인 Hard AI 대안**
 
@@ -1471,6 +1437,8 @@ function BH_renderStats() {
 
 ## 🃏 BH_DECK_DATA 48장 완전 정의 ★ v3.27 신설
 
+> ⚠️ 참조용 보존 — 아래 카드 정의는 v3.27 사양(yeol/ti/pi1/pi2 표기). 정본 v3.46은 §화투 패 JS 데이터 모델 참조 (jo/dan 표기). 신규 게임 구현 시 정본 사양 우선. ★ v3.46 (2026-05-25)
+
 **설계 원칙**: 카드 ID = 월(1~12) × 종류(gwang/yeol/ti/pi1/pi2) 체계.
 족보 계산은 ID가 아닌 `month`·`type`·`jokbo` 배열로 판정.
 
@@ -1549,6 +1517,8 @@ var BH_DECK_DATA = [
 ---
 
 ## 🎯 족보 판정 완전판 ★ v3.27 신설
+
+> ⚠️ 참조용 보존 — 아래 족보 판정 사양은 v3.27 (yeol/ssangpi 표기). 정본 v3.46은 type=jo/dan 기반 + 전통 민화투 룰(쌍피 개념 없음). 신규 게임 구현 시 정본 BH_getJokboList 패턴 참조 권장. ★ v3.46 (2026-05-25)
 
 ```javascript
 /**
@@ -2526,6 +2496,8 @@ if (btnStart) btnStart.addEventListener('pointerup', function() {
 ---
 
 ## 🎮 카드 뒤집기 애니메이션 — CSS 3D Flip v3.33 신설
+
+> ⚠️ 보류 — 정본 미구현. 현재 `BH_playCardFlip`은 사운드 함수(AudioContext 기반). CSS 3D flip 시각 애니메이션은 향후 시각 품질 개선 사이클 대상. 아래 사양 참조용 보존. ★ v3.46 (2026-05-25)
 
 **목적**: 덱에서 카드 뒤집을 때 3D flip 효과 (CSS perspective만 사용, JS 없음)
 
