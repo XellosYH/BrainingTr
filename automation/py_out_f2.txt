@@ -1,0 +1,6 @@
+DONE
+[lead] new rows=65
+[game] new rows=42
+[dev] new rows=46
+[qa] new rows=45
+[lead] CLAUDE.md row added, total=65
