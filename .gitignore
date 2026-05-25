@@ -1,4 +1,5 @@
 # 청크/임시 파일
+widgets/chunk_*.txt
 widgets/*_chunk*.txt
 widgets/*_b64*.txt
 widgets/raw_*.txt
