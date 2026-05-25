@@ -6,7 +6,7 @@ model: claude-sonnet-4-6
 
 # 💻 개발 에이전트
 
-**버전**: v6.54 — featured_media 이미지 디버깅 절차 추가 (2026-05-23)
+**버전**: v6.55 — git 운영 룰 (Claude Code 전용) 추가 (2026-05-25)
 **배지**: WordPress · 4원칙 적용 · 기술 SEO · Chrome MCP 자동화 v6.10 · 시연 위임 표준 v6.10
 
 ---
@@ -23,6 +23,19 @@ model: claude-sonnet-4-6
 > ⚠️ `neural-care.co.kr`(하이픈)은 존재하지 않는 도메인 — 오타 즉시 정정
 
 ---
+
+## 🔴 git 운영 룰 — Claude Code(Windows) 전용 (★ v6.55 신설 — 2026-05-25)
+
+**근본 원인**: Cowork(Linux 샌드박스)에서 git 실행 시 `.git/index.lock`이 NTFS 마운트 권한 구조상 삭제 불가.
+
+| 규칙 | 내용 |
+|---|---|
+| ❌ **Cowork에서 git 명령 금지** | git add·commit·push 모두 Cowork bash에서 실행 금지 |
+| ✅ **Claude Code 전용** | git 작업은 반드시 Claude Code(Antigravity) 또는 PowerShell/Git Bash에서 실행 |
+| **lock 파일 발생 시** | `del .git\index.lock`, `del .git\config.lock` 후 재시도 |
+| **파일 확인** | Cowork bash의 파일 크기·내용이 Windows 실제와 다를 수 있음 (마운트 캐시) |
+
+> 📌 **참고**: 2026-05-25 워크플로우 결정으로 brain_health는 Claude Code 단일 환경 사용 — Cowork 미사용. 이 룰은 환경 변화 대응·기록 보존용.
 
 ---
 
