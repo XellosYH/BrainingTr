@@ -1,0 +1,146 @@
+#!/bin/sh
+# brain_health pre-commit hook — 1단계 게이트
+# 라운드테이블 2026-05-25 채택: 5개 게임 에이전트 1단계 명세 통합
+# 환경: Windows + Git for Windows (sh.exe) / Python 필수
+# 우회: git commit --no-verify (권장 X)
+# ★ 2026-05-25 개정: staging-only 검사로 변경 — untracked 파일 false-positive 해결
+
+FAIL=0
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+# staging된 파일 목록 (Add/Modify 대상만)
+STAGED_ALL=$(git diff --cached --name-only --diff-filter=AM 2>/dev/null)
+
+# ─────────────────────────────────────────────────────
+# 게이트 1. BH_ prefix 검증 (design_ui + game G1)
+#   staging된 widgets/post*_widget.html 내 id·class가 BH_·wp-·라이브러리 prefix 외이면 FAIL
+# ─────────────────────────────────────────────────────
+STAGED_WIDGETS=$(echo "$STAGED_ALL" | grep -E 'widgets/post.*_widget\.html$')
+if [ -n "$STAGED_WIDGETS" ]; then
+  VIOLATIONS=$(echo "$STAGED_WIDGETS" | xargs grep -hoE '(id|class)="[^"]+"' 2>/dev/null \
+    | grep -vE '"(BH_|wp-|swiper-|fa-|fas-|far-|gb-|wk-|wk[A-Z])' \
+    | grep -vE '=""')
+  if [ -n "$VIOLATIONS" ]; then
+    echo "❌ 게이트 1 FAIL: BH_ prefix 누락 (staged: $STAGED_WIDGETS)"
+    echo "$VIOLATIONS" | head -5
+    FAIL=1
+  fi
+else
+  echo "ℹ 게이트 1 skip: staging된 widget 파일 없음"
+fi
+
+# ─────────────────────────────────────────────────────
+# 게이트 2. style 태그 단일행 검증 (design_ui + game G3, wpautop 방어)
+# ─────────────────────────────────────────────────────
+if [ -n "$STAGED_WIDGETS" ]; then
+  STAGED_WIDGETS_PYLIST=$(echo "$STAGED_WIDGETS" | tr '\n' ',' | sed "s|,|','|g" | sed "s|^|'|" | sed "s|,$||" | sed "s|$|'|")
+  python -c "
+import re, sys
+files = [$STAGED_WIDGETS_PYLIST]
+failed = []
+for f in files:
+    try:
+        txt = open(f, encoding='utf-8').read()
+        for m in re.finditer(r'<style[^>]*>([^<]*)</style>', txt, re.DOTALL):
+            if '\n' in m.group(1):
+                failed.append(f)
+                break
+    except Exception:
+        pass
+if failed:
+    print('FAIL: style 태그 멀티라인 (wpautop 사고 위험)')
+    for f in failed: print(' ', f)
+    sys.exit(1)
+" 2>&1
+  [ $? -ne 0 ] && { echo "❌ 게이트 2 FAIL: style 멀티라인 (staged 파일 대상)"; FAIL=1; }
+else
+  echo "ℹ 게이트 2 skip: staging된 widget 파일 없음"
+fi
+
+# ─────────────────────────────────────────────────────
+# 게이트 3. AudioContext 직접 호출 금지 (sound)
+#   BH_getAC() 경유 필수
+#   staging된 widget / sound_module 파일만 검사
+# ─────────────────────────────────────────────────────
+STAGED_SOUND=$(echo "$STAGED_ALL" | grep -E 'widgets/post.*(widget|sound_module)\.(html|js)$')
+if [ -n "$STAGED_SOUND" ]; then
+  AC=$(echo "$STAGED_SOUND" | xargs grep -nE 'new (window\.)?(webkit)?AudioContext\(\)' 2>/dev/null \
+       | grep -v 'BH_getAC')
+  if [ -n "$AC" ]; then
+    echo "❌ 게이트 3 FAIL: AudioContext 직접 호출 (BH_getAC 경유 필수, staged: $STAGED_SOUND)"
+    echo "$AC" | head -3
+    FAIL=1
+  fi
+else
+  echo "ℹ 게이트 3 skip: staging된 widget/sound_module 파일 없음"
+fi
+
+# ─────────────────────────────────────────────────────
+# 게이트 4. SVG 라이선스 마커 검증 (design)
+#   staging된 design/*.svg에만 적용
+# ─────────────────────────────────────────────────────
+STAGED_SVG=$(echo "$STAGED_ALL" | grep -E 'design/.*\.svg$')
+if [ -n "$STAGED_SVG" ]; then
+  MISSING=$(echo "$STAGED_SVG" | xargs grep -L 'license:' 2>/dev/null)
+  if [ -n "$MISSING" ]; then
+    echo "❌ 게이트 4 FAIL: SVG 라이선스 마커 누락 (staged 파일)"
+    echo "$MISSING" | head -3
+    FAIL=1
+  fi
+else
+  echo "ℹ 게이트 4 skip: staging된 SVG 파일 없음"
+fi
+
+# ─────────────────────────────────────────────────────
+# 게이트 5. SVG NUL 패딩 검증 (design, Edit 툴 사고 방어)
+#   staging된 design/*.svg에만 적용
+# ─────────────────────────────────────────────────────
+if [ -n "$STAGED_SVG" ]; then
+  STAGED_SVG_PYLIST=$(echo "$STAGED_SVG" | tr '\n' ',' | sed "s|,|','|g" | sed "s|^|'|" | sed "s|,$||" | sed "s|$|'|")
+  python -c "
+import sys
+files = [$STAGED_SVG_PYLIST]
+bad = []
+for f in files:
+    try:
+        if b'\x00' in open(f,'rb').read():
+            bad.append(f)
+    except Exception:
+        pass
+if bad:
+    print('FAIL: SVG NUL 패딩 검출')
+    for f in bad: print(' ', f)
+    sys.exit(1)
+" 2>&1
+  [ $? -ne 0 ] && { echo "❌ 게이트 5 FAIL: SVG NUL 패딩 (staged 파일 대상)"; FAIL=1; }
+else
+  echo "ℹ 게이트 5 skip: staging된 SVG 파일 없음"
+fi
+
+# ─────────────────────────────────────────────────────
+# 게이트 6. 기획서 [검수 식별자] 검증 (game_planner)
+#   staging된 게임 plan에만 적용
+# ─────────────────────────────────────────────────────
+STAGED_PLANS=$(echo "$STAGED_ALL" | grep -E 'game_plans/post.*_game_plan\.md$')
+if [ -n "$STAGED_PLANS" ]; then
+  MISSING_ID=$(echo "$STAGED_PLANS" | xargs -I {} sh -c 'grep -L "검수 식별자:" "{}" 2>/dev/null')
+  if [ -n "$MISSING_ID" ]; then
+    echo "❌ 게이트 6 FAIL: 기획서 [검수 식별자] 누락"
+    echo "$MISSING_ID"
+    FAIL=1
+  fi
+fi
+
+# ─────────────────────────────────────────────────────
+# 결과
+# ─────────────────────────────────────────────────────
+if [ $FAIL -eq 1 ]; then
+  echo ""
+  echo "🛂 pre-commit hook FAIL — 위 항목 수정 후 다시 commit 시도하세요."
+  echo "   긴급 시 'git commit --no-verify'로 우회 가능 (권장 X)"
+  exit 1
+fi
+
+echo "✅ pre-commit hook PASS — 6개 게이트 통과"
+exit 0

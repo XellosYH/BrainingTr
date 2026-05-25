@@ -1,0 +1,123 @@
+<!-- 나의 주간 걷기 점수는? — 자가체크리스트 위젯 (post6) -->
+<!-- game 에이전트 v3.17 / brain_health_1.0 / 2026-05-18 -->
+<style>.wk-wrap{font-family:"Noto Sans KR","Apple SD Gothic Neo",sans-serif;max-width:560px;margin:0 auto;padding:24px 16px;box-sizing:border-box;background:#f0f7fb;border-radius:12px;border:2px solid #2E7D9F;}.wk-title{font-size:22px;font-weight:700;color:#1a5570;text-align:center;margin-bottom:20px;line-height:1.4;}.wk-desc{font-size:18px;color:#2c4a56;text-align:center;margin-bottom:24px;}.wk-items{list-style:none !important;padding:0 !important;margin:0 0 20px 0 !important;}.wk-item{display:flex !important;align-items:center !important;gap:14px !important;margin-bottom:12px !important;list-style:none !important;}.wk-item::before,.wk-item::after{display:none !important;}.wk-btn{flex-shrink:0 !important;width:64px !important;height:64px !important;min-width:64px !important;min-height:64px !important;border-radius:12px !important;border:3px solid #2E7D9F !important;background:#ffffff !important;background-color:#ffffff !important;cursor:pointer !important;font-size:28px !important;line-height:1 !important;display:flex !important;align-items:center !important;justify-content:center !important;transition:background 0.15s,border-color 0.15s !important;-webkit-tap-highlight-color:transparent !important;box-shadow:none !important;text-shadow:none !important;padding:0 !important;}.wk-btn:hover,.wk-btn:focus{background:#f0f7fb !important;background-color:#f0f7fb !important;outline:none !important;}.wk-btn[aria-checked="true"]{background:#2E7D9F !important;background-color:#2E7D9F !important;border-color:#1a5570 !important;}.wk-btn[aria-checked="true"]:hover{background:#1a5570 !important;background-color:#1a5570 !important;}.wk-btn[aria-checked="true"] .wk-icon::before{content:"✓";}.wk-btn[aria-checked="false"] .wk-icon::before{content:"";}.wk-label{font-size:18px;color:#1a3540;line-height:1.5;cursor:pointer;flex:1;}.wk-label.checked{color:#2E7D9F;font-weight:600;}.wk-score-bar-wrap{background:#ddeef5;border-radius:8px;height:14px;margin-bottom:20px;overflow:hidden;}.wk-score-bar{height:100%;background:#2E7D9F;border-radius:8px;transition:width 0.35s ease;width:0%;}.wk-result{display:none;background:#ffffff;border:2px solid #2E7D9F;border-radius:10px;padding:20px 18px;margin-bottom:18px;text-align:center;}.wk-result.show{display:block;}.wk-result-score{font-size:36px;font-weight:800;color:#2E7D9F;margin-bottom:6px;}.wk-result-grade{font-size:20px;font-weight:700;color:#1a5570;margin-bottom:10px;line-height:1.5;}.wk-result-msg{font-size:18px;color:#2c4a56;line-height:1.6;margin-bottom:14px;}.wk-disclaimer{font-size:14px;color:#888;border-top:1px solid #dde;padding-top:10px;margin-top:4px;}.wk-reset-btn{display:block;width:100%;height:60px;font-size:18px;font-weight:700;color:#ffffff;background:#2E7D9F;border:none;border-radius:10px;cursor:pointer;margin-top:4px;transition:background 0.15s;}.wk-reset-btn:hover{background:#1a5570;}.wk-count{text-align:center;font-size:18px;color:#2E7D9F;font-weight:600;margin-bottom:8px;}@media (max-width:480px){.wk-title{font-size:20px;}.wk-label{font-size:17px;}}</style>
+
+<div class="wk-wrap" role="region" aria-label="나의 주간 걷기 점수 자가체크">
+  <div class="wk-title">🚶 나의 주간 걷기 점수는?</div>
+  <div class="wk-desc">해당하는 항목을 모두 클릭하세요</div>
+
+  <ul class="wk-items" id="wkItems">
+    <li class="wk-item">
+      <button class="wk-btn" role="checkbox" aria-checked="false"
+        data-idx="0" aria-label="어제 30분 이상 걸었다" onclick="wkToggle(this)">
+        <span class="wk-icon" aria-hidden="true"></span>
+      </button>
+      <span class="wk-label" id="wkLabel0" onclick="wkToggle(document.querySelector('[data-idx=\'0\']'))">
+        어제 30분 이상 걸었다
+      </span>
+    </li>
+    <li class="wk-item">
+      <button class="wk-btn" role="checkbox" aria-checked="false"
+        data-idx="1" aria-label="이번 주 3회 이상 걸었다" onclick="wkToggle(this)">
+        <span class="wk-icon" aria-hidden="true"></span>
+      </button>
+      <span class="wk-label" id="wkLabel1" onclick="wkToggle(document.querySelector('[data-idx=\'1\']'))">
+        이번 주 3회 이상 걸었다
+      </span>
+    </li>
+    <li class="wk-item">
+      <button class="wk-btn" role="checkbox" aria-checked="false"
+        data-idx="2" aria-label="주로 실외에서 걷는다" onclick="wkToggle(this)">
+        <span class="wk-icon" aria-hidden="true"></span>
+      </button>
+      <span class="wk-label" id="wkLabel2" onclick="wkToggle(document.querySelector('[data-idx=\'2\']'))">
+        주로 실외에서 걷는다
+      </span>
+    </li>
+    <li class="wk-item">
+      <button class="wk-btn" role="checkbox" aria-checked="false"
+        data-idx="3" aria-label="숨이 약간 찰 정도 속도로 걷는다" onclick="wkToggle(this)">
+        <span class="wk-icon" aria-hidden="true"></span>
+      </button>
+      <span class="wk-label" id="wkLabel3" onclick="wkToggle(document.querySelector('[data-idx=\'3\']'))">
+        숨이 약간 찰 정도 속도로 걷는다
+      </span>
+    </li>
+    <li class="wk-item">
+      <button class="wk-btn" role="checkbox" aria-checked="false"
+        data-idx="4" aria-label="걷기 후 기분이 좋아지는 편이다" onclick="wkToggle(this)">
+        <span class="wk-icon" aria-hidden="true"></span>
+      </button>
+      <span class="wk-label" id="wkLabel4" onclick="wkToggle(document.querySelector('[data-idx=\'4\']'))">
+        걷기 후 기분이 좋아지는 편이다
+      </span>
+    </li>
+  </ul>
+
+  <div class="wk-count" id="wkCount">선택: 0 / 5</div>
+  <div class="wk-score-bar-wrap">
+    <div class="wk-score-bar" id="wkBar"></div>
+  </div>
+
+  <div class="wk-result" id="wkResult" aria-live="polite">
+    <div class="wk-result-score" id="wkResScore"></div>
+    <div class="wk-result-grade" id="wkResGrade"></div>
+    <div class="wk-result-msg" id="wkResMsg"></div>
+    <div class="wk-disclaimer">참고용 · 의료적 진단이 아닙니다</div>
+  </div>
+
+  <button class="wk-reset-btn" id="wkResetBtn" onclick="wkReset()" aria-label="다시 체크하기">
+    다시 하기
+  </button>
+</div>
+
+<script>
+(function () {
+  var GRADES = [
+    { max: 1, emoji: "🌱", grade: "지금 시작하세요",
+      msg: "오늘 10분 걷기부터! 작은 한 걸음이 뇌건강의 시작입니다." },
+    { max: 3, emoji: "🚶", grade: "조금만 더!",
+      msg: "뇌건강 걷기 습관이 만들어지고 있어요. 꾸준히 이어가면 더 좋아집니다." },
+    { max: 5, emoji: "🏅", grade: "뇌건강 걷기 실천 중",
+      msg: "훌륭한 습관입니다! 걷기가 뇌에 도움이 될 수 있다고 알려져 있어요." }
+  ];
+
+  window.wkToggle = function (btn) {
+    var checked = btn.getAttribute("aria-checked") === "true";
+    btn.setAttribute("aria-checked", checked ? "false" : "true");
+    var idx = btn.getAttribute("data-idx");
+    var label = document.getElementById("wkLabel" + idx);
+    if (label) {
+      label.classList.toggle("checked", !checked);
+    }
+    wkUpdate();
+  };
+
+  function wkUpdate() {
+    var btns = document.querySelectorAll(".wk-btn");
+    var score = 0;
+    btns.forEach(function (b) {
+      if (b.getAttribute("aria-checked") === "true") score++;
+    });
+    document.getElementById("wkCount").textContent = "선택: " + score + " / 5";
+    document.getElementById("wkBar").style.width = (score / 5 * 100) + "%";
+    var g = GRADES[score <= 1 ? 0 : score <= 3 ? 1 : 2];
+    var result = document.getElementById("wkResult");
+    document.getElementById("wkResScore").textContent = score + " / 5점";
+    document.getElementById("wkResGrade").textContent = g.emoji + " " + g.grade;
+    document.getElementById("wkResMsg").textContent = g.msg;
+    result.classList.add("show");
+  }
+
+  window.wkReset = function () {
+    document.querySelectorAll(".wk-btn").forEach(function (b, i) {
+      b.setAttribute("aria-checked", "false");
+      var label = document.getElementById("wkLabel" + i);
+      if (label) label.classList.remove("checked");
+    });
+    document.getElementById("wkCount").textContent = "선택: 0 / 5";
+    document.getElementById("wkBar").style.width = "0%";
+    document.getElementById("wkResult").classList.remove("show");
+  };
+})();
+</script>
